@@ -116,8 +116,11 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   }
 }
 
-/// A single icon in the floating pill nav bar. Icon-only by design; the
-/// [tooltip] keeps it accessible to screen readers.
+/// A single destination in the floating pill nav bar, styled after modern
+/// media apps: icon in a tonal circle when selected, small label beneath.
+///
+/// Labels are shown (unlike the earlier icon-only pass) to match the
+/// requested reference design; they also keep the bar accessible.
 class _PillNavItem extends StatelessWidget {
   const _PillNavItem({
     required this.data,
@@ -132,26 +135,44 @@ class _PillNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: data.tooltip,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const StadiumBorder(),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          decoration: ShapeDecoration(
-            shape: const StadiumBorder(),
-            color:
-                selected ? colorScheme.secondaryContainer : Colors.transparent,
-          ),
-          child: Icon(
-            selected ? data.selectedIcon : data.icon,
-            color: selected
-                ? colorScheme.onSecondaryContainer
-                : colorScheme.onSurfaceVariant,
-          ),
+    return InkWell(
+      onTap: onTap,
+      customBorder: const StadiumBorder(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected
+                    ? colorScheme.secondaryContainer
+                    : Colors.transparent,
+              ),
+              child: Icon(
+                selected ? data.selectedIcon : data.icon,
+                color: selected
+                    ? colorScheme.onSecondaryContainer
+                    : colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              data.tooltip,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight:
+                    selected ? FontWeight.w600 : FontWeight.normal,
+                color: selected
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );
