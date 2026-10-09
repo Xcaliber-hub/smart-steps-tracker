@@ -307,7 +307,7 @@ class SettingsScreen extends ConsumerWidget {
       final days = await ref.read(allDaysProvider.future);
       final backup = ref.read(backupServiceProvider);
       final path = await backup.exportCsv(days);
-      await backup.shareFile(path, 'Smart Steps Tracker CSV export');
+      await backup.shareFile(path, 'Stride CSV export');
       if (context.mounted) {
         _snack(context, 'CSV exported (${days.length} days)');
       }
@@ -322,7 +322,7 @@ class SettingsScreen extends ConsumerWidget {
       final profile = ref.read(profileProvider);
       final backup = ref.read(backupServiceProvider);
       final path = await backup.exportJson(days, profile);
-      await backup.shareFile(path, 'Smart Steps Tracker JSON backup');
+      await backup.shareFile(path, 'Stride JSON backup');
       if (context.mounted) {
         _snack(context, 'JSON backup exported (${days.length} days)');
       }
@@ -678,7 +678,7 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 ListTile(
                   leading: Icon(Icons.directions_walk),
-                  title: Text('Smart Steps Tracker'),
+                  title: Text('Stride'),
                   subtitle: Text('Version 1.0.0'),
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16),

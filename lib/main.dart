@@ -19,59 +19,123 @@ Future<void> main() async {
 
   final container = ProviderContainer();
 
-  // Notifications first: channels must exist before anything posts.
-  final notifications = container.read(notificationServiceProvider);
-  await notifications.init();
-
-  // Background maintenance tasks (survive reboots via WorkManager).
-  await Workmanager().initialize(callbackDispatcher);
-  await Workmanager().registerPeriodicTask(
-    AppConstants.wmUniqueSync,
-    AppConstants.wmTaskSyncSteps,
-    frequency: const Duration(minutes: 15),
-    constraints: Constraints(networkType: NetworkType.notRequired),
-  );
-  await Workmanager().registerPeriodicTask(
-    AppConstants.wmUniqueReminders,
-    AppConstants.wmTaskCheckReminders,
-    frequency: const Duration(hours: 1),
-    constraints: Constraints(networkType: NetworkType.notRequired),
-  );
-
-  // Runtime permissions (best effort here; screens re-ask with rationale).
-  final tracker = container.read(stepTrackerServiceProvider);
-  await tracker.ensurePermission();
-  await notifications.requestPermission();
-
-  // Step pipeline.
-  final repository = container.read(stepRepositoryProvider);
-  await repository.initialize();
-  await tracker.start();
-
-  // Seed default reminders on first launch.
-  final db = container.read(databaseServiceProvider);
-  if ((await db.getReminders()).isEmpty) {
-    for (final reminder in ReminderItem.defaults()) {
-      await db.upsertReminder(reminder);
-    }
-  }
-  final profile =
-      await container.read(settingsServiceProvider).loadProfile();
-  await notifications.rescheduleAll(
-    profile: profile,
-    reminders: await db.getReminders(),
-  );
-
+  // Show the UI immediately. All service initialization happens in BootScreen
+  // AFTER the first frame: requesting runtime permissions before runApp()
+  // can leave the startup hanging on some devices because the permission
+  // dialog has no resumed activity to attach to.
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: const SmartStepsApp(),
+      child: const StrideApp(),
     ),
   );
 }
 
-class SmartStepsApp extends ConsumerWidget {
-  const SmartStepsApp({super.key});
+/// Splash shown while services boot, then hands off to the real UI.
+///
+/// Initialization used to happen in [main] before [runApp], which left the
+/// app stuck on the native splash on devices where the early permission
+/// request never resolved. Doing it here (after the first frame) lets the
+/// system permission dialogs appear normally. Any single failure is
+/// contained: the app always reaches its UI, possibly with degraded
+/// services, instead of hanging forever.
+class BootScreen extends ConsumerStatefulWidget {
+  const BootScreen({super.key});
+
+  @override
+  ConsumerState<BootScreen> createState() => _BootScreenState();
+}
+
+class _BootScreenState extends ConsumerState<BootScreen> {
+  bool _ready = false;
+  String _status = 'Starting up…';
+
+  @override
+  void initState() {
+    super.initState();
+    _boot();
+  }
+
+  void _setStatus(String status) {
+    if (mounted) setState(() => _status = status);
+  }
+
+  Future<void> _boot() async {
+    try {
+      // Notifications first: channels must exist before anything posts.
+      _setStatus('Setting up notifications…');
+      final notifications = ref.read(notificationServiceProvider);
+      await notifications.init();
+
+      // Background maintenance tasks (survive reboots via WorkManager).
+      _setStatus('Scheduling background tasks…');
+      await Workmanager().initialize(callbackDispatcher);
+      await Workmanager().registerPeriodicTask(
+        AppConstants.wmUniqueSync,
+        AppConstants.wmTaskSyncSteps,
+        frequency: const Duration(minutes: 15),
+        constraints: Constraints(networkType: NetworkType.notRequired),
+      );
+      await Workmanager().registerPeriodicTask(
+        AppConstants.wmUniqueReminders,
+        AppConstants.wmTaskCheckReminders,
+        frequency: const Duration(hours: 1),
+        constraints: Constraints(networkType: NetworkType.notRequired),
+      );
+
+      // Runtime permissions (the dialogs need a visible activity).
+      _setStatus('Requesting permissions…');
+      final tracker = ref.read(stepTrackerServiceProvider);
+      await tracker.ensurePermission();
+      await notifications.requestPermission();
+
+      // Step pipeline.
+      _setStatus('Loading your data…');
+      final repository = ref.read(stepRepositoryProvider);
+      await repository.initialize();
+      await tracker.start();
+
+      // Seed default reminders on first launch.
+      final db = ref.read(databaseServiceProvider);
+      if ((await db.getReminders()).isEmpty) {
+        for (final reminder in ReminderItem.defaults()) {
+          await db.upsertReminder(reminder);
+        }
+      }
+      final profile =
+          await ref.read(settingsServiceProvider).loadProfile();
+      await notifications.rescheduleAll(
+        profile: profile,
+        reminders: await db.getReminders(),
+      );
+    } catch (e) {
+      // Never trap the user on this screen: continue with whatever
+      // initialized successfully.
+      debugPrint('Boot failed: $e');
+    }
+    if (mounted) setState(() => _ready = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_ready) return const RootScreen();
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(_status),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class StrideApp extends ConsumerWidget {
+  const StrideApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -83,7 +147,7 @@ class SmartStepsApp extends ConsumerWidget {
         final light = AppTheme.light;
         final dark = AppTheme.dark;
         return MaterialApp(
-          title: 'Smart Steps Tracker',
+          title: 'Stride',
           debugShowCheckedModeBanner: false,
           theme: light.copyWith(
             colorScheme: lightDynamic ?? light.colorScheme,
@@ -92,7 +156,7 @@ class SmartStepsApp extends ConsumerWidget {
             colorScheme: darkDynamic ?? dark.colorScheme,
           ),
           themeMode: themeMode,
-          home: const RootScreen(),
+          home: const BootScreen(),
         );
       },
     );

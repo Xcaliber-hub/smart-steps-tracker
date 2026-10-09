@@ -124,7 +124,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Welcome to\nSmart Steps Tracker',
+            'Welcome to\nStride',
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme
