@@ -2,7 +2,6 @@
 // Smart Steps Tracker — a free and open-source step counter.
 
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:workmanager/workmanager.dart';
@@ -25,18 +24,18 @@ Future<void> main() async {
   await notifications.init();
 
   // Background maintenance tasks (survive reboots via WorkManager).
-  await Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
+  await Workmanager().initialize(callbackDispatcher);
   await Workmanager().registerPeriodicTask(
     AppConstants.wmUniqueSync,
     AppConstants.wmTaskSyncSteps,
     frequency: const Duration(minutes: 15),
-    constraints: Constraints(networkType: NetworkType.not_required),
+    constraints: Constraints(networkType: NetworkType.notRequired),
   );
   await Workmanager().registerPeriodicTask(
     AppConstants.wmUniqueReminders,
     AppConstants.wmTaskCheckReminders,
     frequency: const Duration(hours: 1),
-    constraints: Constraints(networkType: NetworkType.not_required),
+    constraints: Constraints(networkType: NetworkType.notRequired),
   );
 
   // Runtime permissions (best effort here; screens re-ask with rationale).
