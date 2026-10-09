@@ -19,12 +19,15 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Align Kotlin JVM target across all plugins with the app's Java 17 toolchain.
-// (Fixes "Inconsistent JVM Target Compatibility" in older plugins such as flutter_timezone.)
+// Align Kotlin JVM target with each plugin's Java toolchain.
+// (Fixes "Inconsistent JVM Target Compatibility" in older plugins such as flutter_timezone,
+// whose Java compiles target 11 while the app itself uses 17.)
 subprojects {
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    if (project.name == "flutter_timezone") {
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+            compilerOptions {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            }
         }
     }
 }
