@@ -682,6 +682,11 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: Text('Version 1.0.0'),
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16),
+                const ListTile(
+                  leading: Icon(Icons.person_outline),
+                  title: Text('Made by Aditya Awasthi'),
+                ),
+                Divider(height: 1, indent: 16, endIndent: 16),
                 ListTile(
                   leading: Icon(Icons.code_outlined),
                   title: Text('GPL-3.0 — free and open-source'),
