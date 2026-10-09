@@ -43,9 +43,17 @@ class StepRepository {
 
   DayRecord _today = DayRecord(date: DateTime.now());
 
-  /// Live updates of today's record. Emits the current value immediately
-  /// after [initialize].
-  Stream<DayRecord> get todayStream => _todayController.stream;
+  /// Live updates of today's record. Every new subscriber immediately
+  /// receives the current value, then live updates.
+  ///
+  /// (A plain broadcast controller was not enough here: [initialize] runs
+  /// before any widget subscribes, so the initial [add] was silently
+  /// dropped and the dashboard spun forever whenever the sensor had not
+  /// emitted yet.)
+  Stream<DayRecord> get todayStream async* {
+    yield _today;
+    yield* _todayController.stream;
+  }
 
   DayRecord get today => _today;
 

@@ -48,13 +48,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _finish() async {
+    final heightInput = double.tryParse(_heightController.text.trim());
+    final weightInput = double.tryParse(_weightController.text.trim());
+    final imperial = _units == UnitSystem.imperial;
     final current = ref.read(profileProvider);
     final updated = current.copyWith(
       dailyGoal: _goal.round(),
       unitSystem: _units,
       age: int.tryParse(_ageController.text.trim()),
-      heightCm: double.tryParse(_heightController.text.trim()),
-      weightKg: double.tryParse(_weightController.text.trim()),
+      heightCm: heightInput == null
+          ? null
+          : imperial
+              ? heightInput * 30.48
+              : heightInput,
+      weightKg: weightInput == null
+          ? null
+          : imperial
+              ? weightInput / 2.20462
+              : weightInput,
       gender: _gender,
     );
     await ref.read(profileProvider.notifier).update(updated);
@@ -324,10 +335,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             controller: _heightController,
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Height',
-              suffixText: 'cm',
-              border: OutlineInputBorder(),
+              suffixText: _units == UnitSystem.imperial ? 'ft' : 'cm',
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
@@ -335,10 +346,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             controller: _weightController,
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Weight',
-              suffixText: 'kg',
-              border: OutlineInputBorder(),
+              suffixText: _units == UnitSystem.imperial ? 'lb' : 'kg',
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),

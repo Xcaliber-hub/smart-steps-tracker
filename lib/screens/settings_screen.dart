@@ -95,16 +95,16 @@ class SettingsScreen extends ConsumerWidget {
     final displayed = profile.heightCm == null
         ? null
         : imperial
-            ? (profile.heightCm! / 2.54).toStringAsFixed(1)
+            ? (profile.heightCm! / 30.48).toStringAsFixed(2)
             : profile.heightCm!.toStringAsFixed(1);
     final value = await _numberDialog(
       context,
       title: 'Height',
       initialValue: displayed,
-      unit: imperial ? 'in' : 'cm',
+      unit: imperial ? 'ft' : 'cm',
     );
     if (value == null || !context.mounted) return;
-    final cm = imperial ? value * 2.54 : value;
+    final cm = imperial ? value * 30.48 : value;
     if (cm < 50 || cm > 300) {
       _snack(context, 'Please enter a realistic height.');
       return;
