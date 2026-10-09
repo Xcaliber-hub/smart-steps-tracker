@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 
 /// A small tappable card showing one headline metric.
 ///
-/// Shows [icon] in a tonal circle next to [value] (large) and [label]
-/// (caption). When [onTap] is provided the whole card ripples and is
-/// exposed to assistive tech as a button.
+/// Vertical layout: [icon] in a tonal circle on top, [value] (large)
+/// beneath it, then [label] (caption) with the full card width available
+/// so labels never get awkwardly cropped. When [onTap] is provided the
+/// whole card ripples and is exposed to assistive tech as a button.
 class StatCard extends StatelessWidget {
   /// Creates a stat card with [label], [value] and [icon].
   const StatCard({
@@ -37,7 +38,9 @@ class StatCard extends StatelessWidget {
 
     final content = Padding(
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 44,
@@ -48,27 +51,22 @@ class StatCard extends StatelessWidget {
             ),
             child: Icon(icon, color: colorScheme.onSecondaryContainer),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  value,
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 2,
           ),
         ],
       ),

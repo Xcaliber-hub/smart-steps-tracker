@@ -13,14 +13,26 @@ import 'settings_screen.dart';
 
 /// Root shell hosting the five main tabs of the app.
 ///
-/// Uses an [IndexedStack] so each tab keeps its state while navigating, and a
-/// Material 3 [NavigationBar] for the bottom destinations.
+/// Uses an [IndexedStack] so each tab keeps its state while navigating, and
+/// a floating pill-shaped icon-only navigation bar.
 class MainScaffold extends ConsumerStatefulWidget {
   /// Creates the app shell.
   const MainScaffold({super.key});
 
   @override
   ConsumerState<MainScaffold> createState() => _MainScaffoldState();
+}
+
+class _NavItemData {
+  const _NavItemData({
+    required this.icon,
+    required this.selectedIcon,
+    required this.tooltip,
+  });
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String tooltip;
 }
 
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
@@ -34,6 +46,34 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     SettingsScreen(),
   ];
 
+  static const List<_NavItemData> _items = [
+    _NavItemData(
+      icon: Icons.dashboard_outlined,
+      selectedIcon: Icons.dashboard,
+      tooltip: 'Dashboard',
+    ),
+    _NavItemData(
+      icon: Icons.bar_chart_outlined,
+      selectedIcon: Icons.bar_chart,
+      tooltip: 'Stats',
+    ),
+    _NavItemData(
+      icon: Icons.calendar_month_outlined,
+      selectedIcon: Icons.calendar_month,
+      tooltip: 'History',
+    ),
+    _NavItemData(
+      icon: Icons.emoji_events_outlined,
+      selectedIcon: Icons.emoji_events,
+      tooltip: 'Achievements',
+    ),
+    _NavItemData(
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings,
+      tooltip: 'Settings',
+    ),
+  ];
+
   void _onDestinationSelected(int index) {
     HapticFeedback.selectionClick();
     setState(() => _index = index);
@@ -41,6 +81,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: SafeArea(
         child: IndexedStack(
@@ -48,36 +89,70 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           children: _pages,
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: _onDestinationSelected,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        child: Material(
+          elevation: 6,
+          shadowColor: Colors.black54,
+          borderRadius: BorderRadius.circular(32),
+          color: colorScheme.surfaceContainer,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                for (int i = 0; i < _items.length; i++)
+                  _PillNavItem(
+                    data: _items[i],
+                    selected: _index == i,
+                    onTap: () => _onDestinationSelected(i),
+                  ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Stats',
+        ),
+      ),
+    );
+  }
+}
+
+/// A single icon in the floating pill nav bar. Icon-only by design; the
+/// [tooltip] keeps it accessible to screen readers.
+class _PillNavItem extends StatelessWidget {
+  const _PillNavItem({
+    required this.data,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _NavItemData data;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: data.tooltip,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          decoration: ShapeDecoration(
+            shape: const StadiumBorder(),
+            color:
+                selected ? colorScheme.secondaryContainer : Colors.transparent,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'History',
+          child: Icon(
+            selected ? data.selectedIcon : data.icon,
+            color: selected
+                ? colorScheme.onSecondaryContainer
+                : colorScheme.onSurfaceVariant,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.emoji_events_outlined),
-            selectedIcon: Icon(Icons.emoji_events),
-            label: 'Achievements',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+        ),
       ),
     );
   }

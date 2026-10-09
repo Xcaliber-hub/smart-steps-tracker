@@ -155,7 +155,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 1.6,
+                  childAspectRatio: 1.05,
                   children: [
                     StatCard(
                       label: 'Steps',

@@ -135,7 +135,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 1.6,
+                    childAspectRatio: 1.05,
                     children: cards,
                   ),
                   const SizedBox(height: 16),
