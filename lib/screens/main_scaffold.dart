@@ -89,9 +89,10 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           children: _pages,
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-        child: Material(
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+          child: Material(
           elevation: 6,
           shadowColor: Colors.black54,
           borderRadius: BorderRadius.circular(32),
@@ -110,6 +111,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );
