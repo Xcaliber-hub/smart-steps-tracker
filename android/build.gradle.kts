@@ -19,12 +19,14 @@ subprojects {
     project.evaluationDependsOn(":app")
     // Force every Android library/app module (including Flutter plugins from pub)
     // to compile against API 36, as required by flutter_plugin_android_lifecycle.
-    afterEvaluate {
-        extensions.findByType<com.android.build.api.dsl.LibraryExtension>()?.let {
-            it.compileSdk = 36
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+            compileSdk = 36
         }
-        extensions.findByType<com.android.build.api.dsl.ApplicationExtension>()?.let {
-            it.compileSdk = 36
+    }
+    plugins.withId("com.android.application") {
+        extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
+            compileSdk = 36
         }
     }
 }
