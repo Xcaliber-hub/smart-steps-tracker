@@ -7,14 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'dashboard_screen.dart';
 import 'stats_screen.dart';
-import 'history_screen.dart';
 import 'achievements_screen.dart';
 import 'settings_screen.dart';
 
-/// Root shell hosting the five main tabs of the app.
+/// Root shell hosting the four main tabs of the app.
 ///
 /// Uses an [IndexedStack] so each tab keeps its state while navigating, and
-/// a floating pill-shaped icon-only navigation bar.
+/// a floating pill-shaped icon-only navigation bar. (History lives at the
+/// bottom of the dashboard, reachable by scrolling.)
 class MainScaffold extends ConsumerStatefulWidget {
   /// Creates the app shell.
   const MainScaffold({super.key});
@@ -41,7 +41,6 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   static const List<Widget> _pages = <Widget>[
     DashboardScreen(),
     StatsScreen(),
-    HistoryScreen(),
     AchievementsScreen(),
     SettingsScreen(),
   ];
@@ -56,11 +55,6 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       icon: Icons.bar_chart_outlined,
       selectedIcon: Icons.bar_chart,
       tooltip: 'Stats',
-    ),
-    _NavItemData(
-      icon: Icons.calendar_month_outlined,
-      selectedIcon: Icons.calendar_month,
-      tooltip: 'History',
     ),
     _NavItemData(
       icon: Icons.emoji_events_outlined,
@@ -89,40 +83,48 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           children: _pages,
         ),
       ),
+      // Content-hugging pill: Center + min-sized Row so the bar is a true
+      // pill, with every icon evenly spaced inside it.
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
-          child: Material(
-          elevation: 6,
-          shadowColor: Colors.black54,
-          borderRadius: BorderRadius.circular(32),
-          color: colorScheme.surfaceContainer,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                for (int i = 0; i < _items.length; i++)
-                  _PillNavItem(
-                    data: _items[i],
-                    selected: _index == i,
-                    onTap: () => _onDestinationSelected(i),
-                  ),
-              ],
+          padding: const EdgeInsets.only(bottom: 28),
+          child: Center(
+            child: Material(
+              elevation: 6,
+              shadowColor: Colors.black54,
+              borderRadius: BorderRadius.circular(999),
+              color: colorScheme.surfaceContainer,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (int i = 0; i < _items.length; i++)
+                      Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6),
+                        child: _PillNavItem(
+                          data: _items[i],
+                          selected: _index == i,
+                          onTap: () => _onDestinationSelected(i),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
   }
 }
 
-/// A single destination in the floating pill nav bar, styled after modern
-/// media apps: icon in a tonal circle when selected, small label beneath.
+/// A single destination in the floating pill nav bar.
 ///
-/// Labels are shown (unlike the earlier icon-only pass) to match the
-/// requested reference design; they also keep the bar accessible.
+/// Icon-only by design; the tooltip is exposed as the semantic label so
+/// screen readers still announce each destination.
 class _PillNavItem extends StatelessWidget {
   const _PillNavItem({
     required this.data,
@@ -137,44 +139,29 @@ class _PillNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      customBorder: const StadiumBorder(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected
-                    ? colorScheme.secondaryContainer
-                    : Colors.transparent,
-              ),
-              child: Icon(
-                selected ? data.selectedIcon : data.icon,
-                color: selected
-                    ? colorScheme.onSecondaryContainer
-                    : colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              data.tooltip,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.normal,
-                color: selected
-                    ? colorScheme.onSurface
-                    : colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+    return Semantics(
+      label: data.tooltip,
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: selected
+                ? colorScheme.secondaryContainer
+                : Colors.transparent,
+          ),
+          child: Icon(
+            selected ? data.selectedIcon : data.icon,
+            color: selected
+                ? colorScheme.onSecondaryContainer
+                : colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );

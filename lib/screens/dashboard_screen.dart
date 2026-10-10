@@ -11,6 +11,7 @@ import '../utils/formatters.dart';
 import '../utils/stats_calculator.dart';
 import '../viewmodels/providers.dart';
 import '../widgets/goal_progress_ring.dart';
+import '../widgets/history_section.dart';
 import '../widgets/section_header.dart';
 import '../widgets/stat_card.dart';
 
@@ -216,6 +217,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  const HistorySection(),
                   const SizedBox(height: 16),
                 ],
               ),

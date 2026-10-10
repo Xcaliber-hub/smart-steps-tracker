@@ -118,7 +118,7 @@ class AchievementsScreen extends ConsumerWidget {
                   crossAxisCount: 2,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.85,
+                  childAspectRatio: 0.72,
                 ),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
