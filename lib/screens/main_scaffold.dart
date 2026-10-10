@@ -15,12 +15,9 @@ import 'settings_screen.dart';
 /// Root shell hosting the four main tabs of the app.
 ///
 /// Uses an [IndexedStack] so each tab keeps its state while navigating, and
-/// a floating glassmorphic pill-shaped icon-only navigation dock that hovers
-/// over the UI in a [Stack] overlay (never occupying layout space) while
-/// page content scrolls underneath it. (History lives at the bottom of the
-/// dashboard, reachable by scrolling.)
+/// a floating glassmorphic pill-shaped navigation dock with icons and labels
+/// that hovers over the UI in a [Stack] overlay.
 class MainScaffold extends ConsumerStatefulWidget {
-  /// Creates the app shell.
   const MainScaffold({super.key});
 
   @override
@@ -31,11 +28,13 @@ class _NavItemData {
   const _NavItemData({
     required this.icon,
     required this.selectedIcon,
+    required this.label,
     required this.tooltip,
   });
 
   final IconData icon;
   final IconData selectedIcon;
+  final String label;
   final String tooltip;
 }
 
@@ -53,21 +52,25 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     _NavItemData(
       icon: Icons.dashboard_outlined,
       selectedIcon: Icons.dashboard,
+      label: 'Home',
       tooltip: 'Dashboard',
     ),
     _NavItemData(
       icon: Icons.bar_chart_outlined,
       selectedIcon: Icons.bar_chart,
+      label: 'Stats',
       tooltip: 'Stats',
     ),
     _NavItemData(
       icon: Icons.emoji_events_outlined,
       selectedIcon: Icons.emoji_events,
+      label: 'Awards',
       tooltip: 'Achievements',
     ),
     _NavItemData(
       icon: Icons.settings_outlined,
       selectedIcon: Icons.settings,
+      label: 'Settings',
       tooltip: 'Settings',
     ),
   ];
@@ -81,16 +84,10 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      // True floating dock: it lives in a Stack overlay instead of the
-      // Scaffold's bottomNavigationBar slot, so it never occupies layout
-      // space. The body extends behind it (extendBody) and page content
-      // scrolls underneath while the dock hovers fixed on top.
       extendBody: true,
       body: Stack(
         children: [
           SafeArea(
-            // The bottom system inset is covered by the 110px page padding,
-            // which also keeps content clear of the floating dock.
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 110),
@@ -100,12 +97,10 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
               ),
             ),
           ),
-          // Floating navigation dock (top layer). SafeArea sits inside the
-          // Positioned so the dock clears the system gesture bar / 3-button
-          // nav without pushing the page content upward.
+          // Floating navigation dock overlay
           Positioned(
-            left: 20,
-            right: 20,
+            left: 16,
+            right: 16,
             bottom: 20,
             child: SafeArea(
               top: false,
@@ -113,37 +108,35 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
               right: false,
               child: Center(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
+                  borderRadius: BorderRadius.circular(36),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                     child: Container(
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainer
-                            .withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(32),
+                            .withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(36),
                         border: Border.all(
-                          color:
-                              colorScheme.outline.withValues(alpha: 0.08),
+                          color: colorScheme.outline.withValues(alpha: 0.1),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                Colors.black.withValues(alpha: 0.18),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 28,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                          horizontal: 8, vertical: 8),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           for (int i = 0; i < _items.length; i++)
                             Padding(
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 6),
+                                  const EdgeInsets.symmetric(horizontal: 4),
                               child: _PillNavItem(
                                 data: _items[i],
                                 selected: _index == i,
@@ -164,10 +157,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   }
 }
 
-/// A single destination in the floating pill nav bar.
-///
-/// Icon-only by design; the tooltip is exposed as the semantic label so
-/// screen readers still announce each destination.
+/// A single destination in the floating pill nav bar with icon and text label.
 class _PillNavItem extends StatelessWidget {
   const _PillNavItem({
     required this.data,
@@ -188,22 +178,42 @@ class _PillNavItem extends StatelessWidget {
       selected: selected,
       child: InkWell(
         onTap: onTap,
-        customBorder: const CircleBorder(),
+        borderRadius: BorderRadius.circular(28),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.symmetric(
+            horizontal: selected ? 14 : 12,
+            vertical: 10,
+          ),
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(28),
             color: selected
                 ? colorScheme.secondaryContainer
                 : Colors.transparent,
           ),
-          child: Icon(
-            selected ? data.selectedIcon : data.icon,
-            color: selected
-                ? colorScheme.onSecondaryContainer
-                : colorScheme.onSurfaceVariant,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                selected ? data.selectedIcon : data.icon,
+                size: 22,
+                color: selected
+                    ? colorScheme.onSecondaryContainer
+                    : colorScheme.onSurfaceVariant,
+              ),
+              if (selected) ...[
+                const SizedBox(width: 6),
+                Text(
+                  data.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
