@@ -44,7 +44,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final allDays = ref.watch(allDaysProvider);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        100 + MediaQuery.of(context).padding.bottom,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

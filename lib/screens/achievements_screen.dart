@@ -65,7 +65,12 @@ class AchievementsScreen extends ConsumerWidget {
         final colorScheme = Theme.of(context).colorScheme;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            100 + MediaQuery.of(context).padding.bottom,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

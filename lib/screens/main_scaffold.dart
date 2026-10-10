@@ -87,14 +87,14 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       extendBody: true,
       body: Stack(
         children: [
+          // Pages fill the whole screen; they scroll *underneath* the dock.
+          // Each scrollable adds its own bottom padding so the last item
+          // can still be scrolled clear of the dock.
           SafeArea(
             bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 110),
-              child: IndexedStack(
-                index: _index,
-                children: _pages,
-              ),
+            child: IndexedStack(
+              index: _index,
+              children: _pages,
             ),
           ),
           // Floating navigation dock overlay
