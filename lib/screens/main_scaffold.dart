@@ -83,37 +83,40 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           children: _pages,
         ),
       ),
-      // Content-hugging pill: Center + min-sized Row so the bar is a true
-      // pill, with every icon evenly spaced inside it.
+      // Center expands to fill the nav slot (pushing the page body to
+      // zero height), so a centered Row is used: the pill hugs its content.
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 28),
-          child: Center(
-            child: Material(
-              elevation: 6,
-              shadowColor: Colors.black54,
-              borderRadius: BorderRadius.circular(999),
-              color: colorScheme.surfaceContainer,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (int i = 0; i < _items.length; i++)
-                      Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 6),
-                        child: _PillNavItem(
-                          data: _items[i],
-                          selected: _index == i,
-                          onTap: () => _onDestinationSelected(i),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Material(
+                elevation: 6,
+                shadowColor: Colors.black54,
+                borderRadius: BorderRadius.circular(999),
+                color: colorScheme.surfaceContainer,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (int i = 0; i < _items.length; i++)
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 6),
+                          child: _PillNavItem(
+                            data: _items[i],
+                            selected: _index == i,
+                            onTap: () => _onDestinationSelected(i),
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),

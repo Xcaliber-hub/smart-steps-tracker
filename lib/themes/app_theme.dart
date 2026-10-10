@@ -3,13 +3,11 @@
 
 import 'package:flutter/material.dart';
 
-/// Material 3 themes. Dynamic (wallpaper-based) colors are applied in
-/// `main.dart` via `DynamicColorBuilder` on Android 12+; these seed-based
-/// schemes are the fallback and the look on older releases.
+/// Material 3 themes, seeded from a warm light brown.
 class AppTheme {
   AppTheme._();
 
-  static const _seed = Color(0xFF2E7D32); // deep green, walking/nature vibe
+  static const _seed = Color(0xFFB08968); // light brown, earthy stride vibe
 
   static ThemeData get light {
     final scheme = ColorScheme.fromSeed(

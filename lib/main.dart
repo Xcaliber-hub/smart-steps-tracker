@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Smart Steps Tracker — a free and open-source step counter.
 
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:workmanager/workmanager.dart';
@@ -141,24 +140,15 @@ class StrideApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(profileProvider.select((p) => p.themeMode));
 
-    // Dynamic (wallpaper) colors on Android 12+; seed fallback otherwise.
-    return DynamicColorBuilder(
-      builder: (lightDynamic, darkDynamic) {
-        final light = AppTheme.light;
-        final dark = AppTheme.dark;
-        return MaterialApp(
-          title: 'Stride',
-          debugShowCheckedModeBanner: false,
-          theme: light.copyWith(
-            colorScheme: lightDynamic ?? light.colorScheme,
-          ),
-          darkTheme: dark.copyWith(
-            colorScheme: darkDynamic ?? dark.colorScheme,
-          ),
-          themeMode: themeMode,
-          home: const BootScreen(),
-        );
-      },
+    // Warm light-brown theme (wallpaper dynamic colors intentionally not
+    // applied so the brown identity stays consistent).
+    return MaterialApp(
+      title: 'Stride',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
+      home: const BootScreen(),
     );
   }
 }
