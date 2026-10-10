@@ -31,11 +31,29 @@ android {
         versionName = flutter.versionName
     }
 
+    // Release signing: uses the permanent Stride keystore when the
+    // KEYSTORE_* environment variables are present (CI), otherwise falls
+    // back to the debug key so `flutter run --release` still works.
+    val keystorePath = System.getenv("KEYSTORE_PATH")
+    signingConfigs {
+        create("release") {
+            if (!keystorePath.isNullOrEmpty()) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (!keystorePath.isNullOrEmpty()) {
+                signingConfigs.getByName("release")
+            } else {
+                // Signing with the debug keys for now, so `flutter run --release` works.
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
