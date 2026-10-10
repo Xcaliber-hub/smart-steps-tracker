@@ -41,9 +41,13 @@ void callbackDispatcher() {
       return true;
     } catch (_) {
       return false;
-    } finally {
-      await db.close();
     }
+    // NOTE: deliberately no db.close() here. Closing the database in the
+    // background isolate has been observed to invalidate the main
+    // isolate's handle (native database ids are shared), surfacing as
+    // `DatabaseException(database_closed)` in the app. The isolate is
+    // torn down right after the task, so nothing leaks in practice, and
+    // DatabaseService reopens transparently if a handle ever goes stale.
   });
 }
 

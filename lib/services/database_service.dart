@@ -18,12 +18,30 @@ import '../utils/constants.dart';
 ///   enabled INTEGER, type TEXT)`
 class DatabaseService {
   Database? _db;
+  Future<Database>? _openFuture;
 
+  /// Returns an open database, reopening transparently if the cached
+  /// handle was closed.
+  ///
+  /// The handle can be invalidated without this object knowing: the
+  /// WorkManager background isolate opens the same file, and closing it
+  /// there can drop the native handle out from under the main isolate
+  /// (hence the `database_closed` errors). Checking [Database.isOpen]
+  /// here makes every access self-healing instead of stuck on a dead
+  /// handle forever. Concurrent opens are serialized so two callers never
+  /// race to open the same file twice.
   Future<Database> get database async {
     final db = _db;
-    if (db != null) return db;
-    _db = await _open();
-    return _db!;
+    if (db != null && db.isOpen) return db;
+    if (_openFuture != null) return _openFuture!;
+    final future = _open();
+    _openFuture = future;
+    try {
+      _db = await future;
+      return _db!;
+    } finally {
+      _openFuture = null;
+    }
   }
 
   Future<Database> _open() async {
@@ -175,5 +193,6 @@ class DatabaseService {
   Future<void> close() async {
     await _db?.close();
     _db = null;
+    _openFuture = null;
   }
 }

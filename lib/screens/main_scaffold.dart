@@ -15,8 +15,9 @@ import 'settings_screen.dart';
 /// Root shell hosting the four main tabs of the app.
 ///
 /// Uses an [IndexedStack] so each tab keeps its state while navigating, and
-/// a floating glassmorphic pill-shaped icon-only navigation bar that the
-/// page content scrolls underneath. (History lives at the bottom of the
+/// a floating glassmorphic pill-shaped icon-only navigation dock that hovers
+/// over the UI in a [Stack] overlay (never occupying layout space) while
+/// page content scrolls underneath it. (History lives at the bottom of the
 /// dashboard, reachable by scrolling.)
 class MainScaffold extends ConsumerStatefulWidget {
   /// Creates the app shell.
@@ -80,76 +81,84 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      // True floating nav: the body extends behind the bar and page
-      // content scrolls underneath it.
+      // True floating dock: it lives in a Stack overlay instead of the
+      // Scaffold's bottomNavigationBar slot, so it never occupies layout
+      // space. The body extends behind it (extendBody) and page content
+      // scrolls underneath while the dock hovers fixed on top.
       extendBody: true,
-      body: SafeArea(
-        // The bottom system inset is covered by the 110px page padding,
-        // which also keeps content clear of the floating bar.
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 110),
-          child: IndexedStack(
-            index: _index,
-            children: _pages,
+      body: Stack(
+        children: [
+          SafeArea(
+            // The bottom system inset is covered by the 110px page padding,
+            // which also keeps content clear of the floating dock.
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 110),
+              child: IndexedStack(
+                index: _index,
+                children: _pages,
+              ),
+            ),
           ),
-        ),
-      ),
-      // Floating glass pill. A Center/expanding widget must not be used
-      // here: it would fill the nav slot and squash the body to zero
-      // height, so a centered Row keeps the pill hugging its content.
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(32),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainer
-                          .withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(
-                        color:
-                            colorScheme.outline.withValues(alpha: 0.08),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
+          // Floating navigation dock (top layer). SafeArea sits inside the
+          // Positioned so the dock clears the system gesture bar / 3-button
+          // nav without pushing the page content upward.
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 20,
+            child: SafeArea(
+              top: false,
+              left: false,
+              right: false,
+              child: Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainer
+                            .withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
                           color:
-                              Colors.black.withValues(alpha: 0.18),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
+                              colorScheme.outline.withValues(alpha: 0.08),
+                          width: 1,
                         ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (int i = 0; i < _items.length; i++)
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 6),
-                            child: _PillNavItem(
-                              data: _items[i],
-                              selected: _index == i,
-                              onTap: () => _onDestinationSelected(i),
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                Colors.black.withValues(alpha: 0.18),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
                           ),
-                      ],
+                        ],
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (int i = 0; i < _items.length; i++)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                              child: _PillNavItem(
+                                data: _items[i],
+                                selected: _index == i,
+                                onTap: () => _onDestinationSelected(i),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
