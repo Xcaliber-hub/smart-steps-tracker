@@ -1,4 +1,4 @@
-# Smart Steps Tracker
+# stride
 
 A privacy-friendly, open-source step counter for Android — tracks your daily steps, goals, stats, and achievements entirely on-device.
 
