@@ -89,6 +89,43 @@ class SettingsScreen extends ConsumerWidget {
     await _saveProfile(context, ref, profile.copyWith(age: age));
   }
 
+  Future<void> _editName(BuildContext context, WidgetRef ref) async {
+    final profile = ref.read(profileProvider);
+    final controller = TextEditingController(text: profile.name);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Your name'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          autofillHints: const [AutofillHints.name],
+          decoration: const InputDecoration(labelText: 'Name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null || !context.mounted) return;
+    await _saveProfile(
+      context,
+      ref,
+      profile.copyWith(name: value),
+      message: value.isEmpty ? 'Name cleared' : 'Name updated',
+    );
+  }
+
   Future<void> _editHeight(BuildContext context, WidgetRef ref) async {
     final profile = ref.read(profileProvider);
     final imperial = profile.unitSystem == UnitSystem.imperial;
@@ -408,6 +445,16 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
+                  leading: const Icon(Icons.person_outline),
+                  title: const Text('Name'),
+                  subtitle: Text(
+                    profile.name.isEmpty ? 'Not set' : profile.name,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _editName(context, ref),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
                   leading: const Icon(Icons.cake_outlined),
                   title: const Text('Age'),
                   subtitle:
@@ -684,7 +731,7 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: Icon(Icons.directions_walk),
                   title: Text('Stride'),
-                  subtitle: Text('Version 1.0.0'),
+                  subtitle: Text('Version 1.1.0'),
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16),
                 ListTile(

@@ -165,7 +165,7 @@ smart-steps-tracker/
 | Backup | `csv`, `share_plus`, `file_picker`, `path_provider` |
 | Misc UI | `intl`, `confetti`, `table_calendar` |
 
-Package: `smart_steps_tracker` · Version: 1.0.0+1
+Package: `smart_steps_tracker` · Version: 1.1.0+2
 
 ## Contributing
 

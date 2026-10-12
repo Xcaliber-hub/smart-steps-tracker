@@ -11,6 +11,9 @@ enum UnitSystem { metric, imperial }
 
 /// User-configurable profile and preferences, persisted in SharedPreferences.
 class UserProfile {
+  /// Name used for personalized greetings.
+  final String name;
+
   final int? age;
   final double? heightCm;
   final double? weightKg;
@@ -37,6 +40,7 @@ class UserProfile {
   final int eveningSummaryMinutes;
 
   const UserProfile({
+    this.name = '',
     this.age,
     this.heightCm,
     this.weightKg,
@@ -55,6 +59,7 @@ class UserProfile {
   });
 
   UserProfile copyWith({
+    String? name,
     int? age,
     double? heightCm,
     double? weightKg,
@@ -72,6 +77,7 @@ class UserProfile {
     int? eveningSummaryMinutes,
   }) {
     return UserProfile(
+      name: name ?? this.name,
       age: age ?? this.age,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
@@ -94,6 +100,7 @@ class UserProfile {
 
   Map<String, Object?> toJson() {
     return {
+      'name': name,
       'age': age,
       'heightCm': heightCm,
       'weightKg': weightKg,
@@ -138,6 +145,7 @@ class UserProfile {
       );
     }
     return UserProfile(
+      name: (json['name'] as String?) ?? '',
       age: (json['age'] as num?)?.toInt(),
       heightCm: (json['heightCm'] as num?)?.toDouble(),
       weightKg: (json['weightKg'] as num?)?.toDouble(),

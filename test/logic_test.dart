@@ -8,6 +8,19 @@ import 'package:smart_steps_tracker/utils/health_calculations.dart';
 import 'package:smart_steps_tracker/utils/stats_calculator.dart';
 
 void main() {
+  group('UserProfile', () {
+    test('persists a name and reads legacy data without one', () {
+      const profile = UserProfile(name: 'Aditya', dailyGoal: 12000);
+      final restored = UserProfile.fromJson(profile.toJson());
+      expect(restored.name, 'Aditya');
+      expect(restored.dailyGoal, 12000);
+
+      final legacy = UserProfile.fromJson({'dailyGoal': 7000});
+      expect(legacy.name, '');
+      expect(legacy.dailyGoal, 7000);
+    });
+  });
+
   group('HealthCalculations', () {
     test('stride length scales with height and gender', () {
       final male = HealthCalculations.strideLengthMeters(

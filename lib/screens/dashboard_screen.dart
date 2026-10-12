@@ -96,6 +96,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           data: (record) {
             final progress = _progressOf(record, profile.dailyGoal);
             final streak = weekStats.valueOrNull?.currentStreak ?? 0;
+            final name = profile.name.trim();
+            final greeting = name.isEmpty
+                ? _greeting()
+                : '${_greeting()}, $name';
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 16,
@@ -109,7 +113,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Semantics(
                     header: true,
                     child: Text(
-                      _greeting(),
+                      greeting,
                       style: Theme.of(context)
                           .textTheme
                           .headlineMedium

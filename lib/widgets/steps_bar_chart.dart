@@ -113,7 +113,7 @@ class StepsBarChart extends StatelessWidget {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 24,
+                reservedSize: 38,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
                   if (index < 0 || index >= days.length) {
@@ -122,10 +122,19 @@ class StepsBarChart extends StatelessWidget {
                   final weekday =
                       DateFormat.E().format(days[index].date)[0];
                   return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      weekday,
-                      style: Theme.of(context).textTheme.labelSmall,
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          weekday,
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                        Text(
+                          DateFormat('d').format(days[index].date),
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                      ],
                     ),
                   );
                 },

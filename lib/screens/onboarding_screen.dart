@@ -26,6 +26,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   UnitSystem _units = UnitSystem.metric;
   Gender? _gender;
 
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
@@ -33,6 +34,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _nameController.dispose();
     _ageController.dispose();
     _heightController.dispose();
     _weightController.dispose();
@@ -48,11 +50,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _finish() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your name to continue.')),
+      );
+      return;
+    }
     final heightInput = double.tryParse(_heightController.text.trim());
     final weightInput = double.tryParse(_weightController.text.trim());
     final imperial = _units == UnitSystem.imperial;
     final current = ref.read(profileProvider);
     final updated = current.copyWith(
+      name: name,
       dailyGoal: _goal.round(),
       unitSystem: _units,
       age: int.tryParse(_ageController.text.trim()),
@@ -313,14 +323,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Optional — used only for calorie and distance estimates, '
-            'and stored on-device.',
+            'Your name personalizes greetings. Other details are optional '
+            'and used only for calorie and distance estimates, stored on-device.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 24),
+          TextField(
+            controller: _nameController,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.name],
+            decoration: const InputDecoration(
+              labelText: 'Your name',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
           TextField(
             controller: _ageController,
             keyboardType: TextInputType.number,

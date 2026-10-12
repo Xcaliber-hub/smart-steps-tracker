@@ -14,9 +14,8 @@ import 'settings_screen.dart';
 
 /// Root shell hosting the four main tabs of the app.
 ///
-/// Uses an [IndexedStack] so each tab keeps its state while navigating, and
-/// a floating glassmorphic pill-shaped navigation dock with icons and labels
-/// that hovers over the UI in a [Stack] overlay.
+/// Keeps each tab mounted while animating between them, and uses a floating
+/// glassmorphic pill-shaped navigation dock with icons and labels.
 class MainScaffold extends ConsumerStatefulWidget {
   const MainScaffold({super.key});
 
@@ -87,14 +86,35 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       extendBody: true,
       body: Stack(
         children: [
-          // Pages fill the whole screen; they scroll *underneath* the dock.
-          // Each scrollable adds its own bottom padding so the last item
-          // can still be scrolled clear of the dock.
+          // Pages fill the whole screen and stay mounted to preserve their
+          // state; inactive pages fade and slide out of view.
           SafeArea(
             bottom: false,
-            child: IndexedStack(
-              index: _index,
-              children: _pages,
+            child: Stack(
+              children: [
+                for (var i = 0; i < _pages.length; i++)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      ignoring: _index != i,
+                      child: ExcludeSemantics(
+                        excluding: _index != i,
+                        child: AnimatedOpacity(
+                          opacity: _index == i ? 1 : 0,
+                          duration: const Duration(milliseconds: 280),
+                          curve: Curves.easeInOutCubic,
+                          child: AnimatedSlide(
+                            offset: _index == i
+                                ? Offset.zero
+                                : const Offset(0.025, 0),
+                            duration: const Duration(milliseconds: 280),
+                            curve: Curves.easeInOutCubic,
+                            child: _pages[i],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           // Floating navigation dock overlay
