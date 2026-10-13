@@ -16,6 +16,7 @@ class StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
+    this.iconWidget,
     this.onTap,
   });
 
@@ -27,6 +28,9 @@ class StatCard extends StatelessWidget {
 
   /// Icon shown in the tonal circle.
   final IconData icon;
+
+  /// Optional custom icon widget, used for the animated streak flame.
+  final Widget? iconWidget;
 
   /// Called when the card is tapped; null makes the card non-interactive.
   final VoidCallback? onTap;
@@ -49,14 +53,13 @@ class StatCard extends StatelessWidget {
               color: colorScheme.secondaryContainer,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: colorScheme.onSecondaryContainer),
+            child: iconWidget ??
+                Icon(icon, color: colorScheme.onSecondaryContainer),
           ),
           const SizedBox(height: 12),
           Text(
             value,
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -78,12 +81,8 @@ class StatCard extends StatelessWidget {
         button: onTap != null,
         child: Card(
           clipBehavior: Clip.antiAlias,
-          child: onTap == null
-              ? content
-              : InkWell(
-                  onTap: onTap,
-                  child: content,
-                ),
+          child:
+              onTap == null ? content : InkWell(onTap: onTap, child: content),
         ),
       ),
     );

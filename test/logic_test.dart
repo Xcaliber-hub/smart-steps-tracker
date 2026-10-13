@@ -5,19 +5,36 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_steps_tracker/models/day_record.dart';
 import 'package:smart_steps_tracker/models/user_profile.dart';
 import 'package:smart_steps_tracker/utils/health_calculations.dart';
+import 'package:smart_steps_tracker/utils/step_counter_math.dart';
 import 'package:smart_steps_tracker/utils/stats_calculator.dart';
 
 void main() {
   group('UserProfile', () {
     test('persists a name and reads legacy data without one', () {
-      const profile = UserProfile(name: 'Aditya', dailyGoal: 12000);
+      const profile = UserProfile(
+        name: 'Aditya',
+        dailyGoal: 12000,
+        amoledBlack: true,
+        dynamicColor: true,
+        accentColor: 0xFF6750A4,
+        fontScale: 1.15,
+        showNavigationLabels: false,
+      );
       final restored = UserProfile.fromJson(profile.toJson());
       expect(restored.name, 'Aditya');
       expect(restored.dailyGoal, 12000);
+      expect(restored.amoledBlack, isTrue);
+      expect(restored.dynamicColor, isTrue);
+      expect(restored.accentColor, 0xFF6750A4);
+      expect(restored.fontScale, 1.15);
+      expect(restored.showNavigationLabels, isFalse);
 
       final legacy = UserProfile.fromJson({'dailyGoal': 7000});
       expect(legacy.name, '');
       expect(legacy.dailyGoal, 7000);
+      expect(legacy.amoledBlack, isFalse);
+      expect(legacy.fontScale, 1.0);
+      expect(legacy.showNavigationLabels, isTrue);
     });
   });
 
@@ -43,10 +60,7 @@ void main() {
     });
 
     test('distance is steps times stride', () {
-      expect(
-        HealthCalculations.distanceMetersForSteps(1000, 0.75),
-        750.0,
-      );
+      expect(HealthCalculations.distanceMetersForSteps(1000, 0.75), 750.0);
     });
 
     test('calories scale with weight', () {
@@ -60,6 +74,44 @@ void main() {
       expect(HealthCalculations.distanceMetersForSteps(0, 0.75), 0);
       expect(HealthCalculations.caloriesForSteps(0, 70), 0);
       expect(HealthCalculations.activeMinutesForSteps(0), 0);
+    });
+  });
+
+  group('StepCounterMath', () {
+    test('uses the prior reading as the day boundary', () {
+      final result = StepCounterMath.calculate(
+        cumulative: 90140,
+        storedBaseline: 80000,
+        baselineDay: '2026-10-12',
+        lastSensorValue: 90123,
+        todayKey: '2026-10-13',
+      );
+      expect(result.baseline, 90123);
+      expect(result.steps, 17);
+    });
+
+    test('starts fresh installs from the first observed reading', () {
+      final result = StepCounterMath.calculate(
+        cumulative: 1234,
+        storedBaseline: null,
+        baselineDay: null,
+        lastSensorValue: null,
+        todayKey: '2026-10-13',
+      );
+      expect(result.baseline, 1234);
+      expect(result.steps, 0);
+    });
+
+    test('counts steps after the sensor counter resets on reboot', () {
+      final result = StepCounterMath.calculate(
+        cumulative: 55,
+        storedBaseline: 80000,
+        baselineDay: '2026-10-13',
+        lastSensorValue: 90000,
+        todayKey: '2026-10-13',
+      );
+      expect(result.baseline, 0);
+      expect(result.steps, 55);
     });
   });
 

@@ -10,6 +10,9 @@ class AppConstants {
   static const String prefsSensorBaseline = 'sensor_baseline';
   static const String prefsLastSensorValue = 'last_sensor_value';
   static const String prefsLastSyncDay = 'last_sync_day';
+  static const String prefsNativeSensorLatest = 'native_sensor_latest';
+  static const String prefsNativeSensorUpdatedAt =
+      'native_sensor_updated_at_ms';
   static const String prefsOnboardingDone = 'onboarding_done';
   static const String prefsGoalNotifiedDay = 'goal_notified_day';
   static const String prefsHalfwayNotifiedDay = 'halfway_notified_day';

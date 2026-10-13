@@ -3,32 +3,22 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// Foreground step-sensor listener.
+/// Step-sensor listener with an Android foreground-service companion.
 ///
-/// ## How step counting works
-/// The `pedometer` plugin exposes the Android hardware `TYPE_STEP_COUNTER`
-/// sensor, which reports a monotonically increasing count of steps since the
-/// last device boot. This service forwards those raw cumulative values; the
-/// [StepRepository] turns them into per-day totals using a stored baseline.
-///
-/// ## Background behavior (read this)
-/// - While the app process is alive (foreground or backgrounded), sensor
-///   events keep arriving and are persisted on every event.
-/// - If Android kills the app, no Dart code runs until the user reopens it
-///   or a WorkManager task fires. On the next event we reconcile the delta,
-///   so the daily total self-heals as long as the device did not reboot.
-/// - A device reboot resets the hardware counter to zero; we detect the
-///   counter moving backwards and re-baseline (steps taken before the
-///   reboot are kept, steps between kill and reboot may be undercounted).
-/// - Truly continuous 24/7 capture requires a foreground service with an
-///   ongoing notification (e.g. via `flutter_foreground_task`). That is the
-///   recommended next step if exact background fidelity matters more than
-///   the extra battery/notification cost; the repository layer is already
-///   structured so the data path would not change.
+/// The hardware counter reports steps since device boot. The native Android
+/// service keeps a sensor listener active while Flutter's activity/process is
+/// backgrounded and checkpoints its latest value in shared preferences. This
+/// stream remains active for immediate UI updates when Flutter is running.
 class StepTrackerService {
+  static const MethodChannel _trackingChannel = MethodChannel(
+    'com.smartsteps/step_tracking',
+  );
+
   final StreamController<int> _cumulativeController =
       StreamController<int>.broadcast();
   final StreamController<bool> _sensorStateController =
@@ -41,14 +31,12 @@ class StepTrackerService {
   /// Raw cumulative "steps since boot" values from the hardware sensor.
   Stream<int> get cumulativeSteps => _cumulativeController.stream;
 
-  /// Emits `true` once the first sensor reading arrives, `false` when the
-  /// sensor reports an error (e.g. no step-counter hardware).
+  /// Emits `true` once the first sensor reading arrives, `false` on failure.
   Stream<bool> get sensorAvailable => _sensorStateController.stream;
 
   bool get sensorOk => _sensorOk;
 
-  /// Requests activity-recognition permission (Android 10+). Returns the
-  /// resulting status; tracking is degraded to manual-only when denied.
+  /// Requests activity-recognition permission (Android 10+).
   Future<PermissionStatus> ensurePermission() async {
     var status = await Permission.activityRecognition.status;
     if (!status.isGranted && !status.isPermanentlyDenied) {
@@ -57,10 +45,22 @@ class StepTrackerService {
     return status;
   }
 
-  /// Starts listening to the step-counter sensor. Safe to call repeatedly.
+  /// Starts the Android service and in-process stream. Safe to call repeatedly;
+  /// a failure in one tracking route does not prevent attempting the other.
   Future<void> start() async {
     if (_started) return;
     _started = true;
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        await _trackingChannel.invokeMethod<void>('start');
+      } catch (error) {
+        // Keep the pedometer stream available even if Android denies service
+        // startup or this build does not expose the native channel.
+        debugPrint('Could not start native step-tracking service: $error');
+      }
+    }
+
     try {
       _subscription = Pedometer.stepCountStream.listen(
         (StepCount event) {
@@ -69,23 +69,28 @@ class StepTrackerService {
           _cumulativeController.add(event.steps);
         },
         onError: (_) {
-          // No step-counter sensor (or sensor failure): the app keeps
-          // working, the dashboard shows an explanatory empty state and
-          // previously recorded data remains visible.
           _sensorOk = false;
           _sensorStateController.add(false);
         },
         cancelOnError: false,
       );
-    } catch (_) {
+    } catch (error) {
       _sensorOk = false;
       _sensorStateController.add(false);
+      debugPrint('Could not listen to the step sensor: $error');
     }
   }
 
   Future<void> stop() async {
     await _subscription?.cancel();
     _subscription = null;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        await _trackingChannel.invokeMethod<void>('stop');
+      } catch (error) {
+        debugPrint('Could not stop native step-tracking service: $error');
+      }
+    }
     _started = false;
   }
 

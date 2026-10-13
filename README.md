@@ -7,9 +7,13 @@ A privacy-friendly, open-source step counter for Android — tracks your daily s
 ## Features
 
 **Tracking**
-- Automatic step counting via the device sensor (`StepTrackerService` + pedometer stream)
+- Automatic step counting via the device sensor (`StepTrackerService` + Android foreground service)
 - Daily records with goals, achievements, and streak logic
 - Calorie and distance estimates derived from your height and weight
+
+**Appearance**
+- System/light/dark themes, AMOLED black, optional wallpaper-based dynamic colors
+- Eight accent colors, adjustable text size, and optional navigation labels
 
 **Goals**
 - Custom daily step goals
@@ -66,7 +70,7 @@ Key classes:
 
 | Class | Responsibility |
 |---|---|
-| `StepTrackerService` | pedometer sensor stream, delta tracking |
+| `StepTrackerService` | pedometer stream and native Android foreground-service lifecycle |
 | `StepRepository` | converts sensor deltas into `DayRecord`s |
 | `DatabaseService` | sqflite persistence |
 | `SettingsService` | SharedPreferences (goals, weight, height, preferences) |
@@ -120,11 +124,12 @@ Dependency notes:
 | `POST_NOTIFICATIONS` | reminders and achievement notifications |
 | `RECEIVE_BOOT_COMPLETED` | lets scheduled background work resume after a reboot |
 | `SCHEDULE_EXACT_ALARM` | declared; the app uses inexact alarms, so exact alarms are never requested |
-| `FOREGROUND_SERVICE` | declared where applicable for background work |
+| `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_HEALTH` | persistent step tracking with an ongoing notification |
 
 ## Background behavior & limitations
 
-- **Best-effort background capture.** Steps are synced periodically via WorkManager (`syncSteps` every 15 min, `checkReminders` hourly) using a top-level `callbackDispatcher` (`lib/services/workmanager_callback.dart`). WorkManager tasks persist across reboots, and `RECEIVE_BOOT_COMPLETED` is declared. If Android kills the app, counting resumes and reconciles on next launch or sensor event; a reboot resets the hardware step counter and we re-baseline. Truly continuous capture would need a foreground service — a future enhancement.
+- **Background capture.** An Android health foreground service keeps the step-counter sensor listener active while the Flutter UI is closed, stores the latest hardware reading, and restarts after process reclamation. WorkManager reconciles durable readings into daily records and reminders; tracking is also restored after reboot when permission remains granted. The service shows an ongoing notification. Android's force-stop action, revoked permission, missing step-counter hardware, or manufacturer battery restrictions can still stop collection.
+- **Midnight handling.** At the first reading for a new calendar day, the previous sensor reading is used as the day boundary so steps after midnight are not discarded. A device reboot is detected separately and the counter is rebased from zero.
 - **Floors are always 0** — the pedometer plugin exposes no floor data.
 - **Estimates, not medical data.** Calorie, distance, and active-minute values are rough calculations, not medical advice.
 - **Inexact reminders.** The exact-alarm permission is not requested; reminders may arrive a few minutes early or late.
@@ -165,7 +170,7 @@ smart-steps-tracker/
 | Backup | `csv`, `share_plus`, `file_picker`, `path_provider` |
 | Misc UI | `intl`, `confetti`, `table_calendar` |
 
-Package: `smart_steps_tracker` · Version: 1.1.0+2
+Package: `smart_steps_tracker` · Version: 1.2.0+3
 
 ## Contributing
 

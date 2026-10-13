@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/reminder.dart';
 import '../models/user_profile.dart';
+import '../themes/app_theme.dart';
 import '../utils/formatters.dart';
 import '../viewmodels/providers.dart';
 import '../widgets/section_header.dart';
@@ -17,9 +18,8 @@ class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   void _snack(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _saveProfile(
@@ -48,8 +48,7 @@ class SettingsScreen extends ConsumerWidget {
         content: TextField(
           controller: controller,
           autofocus: true,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             suffixText: unit,
             hintText: 'Enter a value',
@@ -109,8 +108,7 @@ class SettingsScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () =>
-                Navigator.of(context).pop(controller.text.trim()),
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
             child: const Text('Save'),
           ),
         ],
@@ -118,6 +116,22 @@ class SettingsScreen extends ConsumerWidget {
     );
     controller.dispose();
     if (value == null || !context.mounted) return;
+    if (value.toLowerCase() == 'aditya') {
+      await ref
+          .read(profileProvider.notifier)
+          .update(profile.copyWith(name: value));
+      if (!context.mounted) return;
+      HapticFeedback.mediumImpact();
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Hey dev!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      return;
+    }
     await _saveProfile(
       context,
       ref,
@@ -274,23 +288,14 @@ class SettingsScreen extends ConsumerWidget {
   ) async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay(
-        hour: reminder.hour,
-        minute: reminder.minute,
-      ),
+      initialTime: TimeOfDay(hour: reminder.hour, minute: reminder.minute),
     );
     if (picked == null || !context.mounted) return;
     final minutes = picked.hour * 60 + picked.minute;
-    await ref.read(remindersProvider.notifier).updateTime(
-          reminder.id,
-          minutes,
-        );
+    await ref.read(remindersProvider.notifier).updateTime(reminder.id, minutes);
     if (!context.mounted) return;
     HapticFeedback.selectionClick();
-    _snack(
-      context,
-      'Reminder time set to ${Formatters.timeOfDay(minutes)}',
-    );
+    _snack(context, 'Reminder time set to ${Formatters.timeOfDay(minutes)}');
   }
 
   Future<void> _addReminder(BuildContext context, WidgetRef ref) async {
@@ -302,9 +307,7 @@ class SettingsScreen extends ConsumerWidget {
         content: TextField(
           controller: titleController,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Reminder title',
-          ),
+          decoration: const InputDecoration(hintText: 'Reminder title'),
         ),
         actions: [
           TextButton(
@@ -312,8 +315,8 @@ class SettingsScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context)
-                .pop(titleController.text.trim()),
+            onPressed: () =>
+                Navigator.of(context).pop(titleController.text.trim()),
             child: const Text('Next'),
           ),
         ],
@@ -457,8 +460,9 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.cake_outlined),
                   title: const Text('Age'),
-                  subtitle:
-                      Text(profile.age == null ? 'Not set' : '${profile.age}'),
+                  subtitle: Text(
+                    profile.age == null ? 'Not set' : '${profile.age}',
+                  ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _editAge(context, ref),
                 ),
@@ -490,8 +494,9 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.flag_outlined),
                   title: const Text('Daily goal'),
-                  subtitle:
-                      Text('${Formatters.steps(profile.dailyGoal)} steps'),
+                  subtitle: Text(
+                    '${Formatters.steps(profile.dailyGoal)} steps',
+                  ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _editDailyGoal(context, ref),
                 ),
@@ -506,29 +511,24 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Theme',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
+                  Text('Theme', style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
                   Semantics(
                     label: 'Theme mode',
                     child: SegmentedButton<ThemeMode>(
+                      showSelectedIcon: false,
                       segments: const [
                         ButtonSegment(
                           value: ThemeMode.system,
-                          label: Text('System'),
-                          icon: Icon(Icons.settings_suggest_outlined),
+                          label: Text('System', maxLines: 1, softWrap: false),
                         ),
                         ButtonSegment(
                           value: ThemeMode.light,
-                          label: Text('Light'),
-                          icon: Icon(Icons.light_mode_outlined),
+                          label: Text('Light', maxLines: 1, softWrap: false),
                         ),
                         ButtonSegment(
                           value: ThemeMode.dark,
-                          label: Text('Dark'),
-                          icon: Icon(Icons.dark_mode_outlined),
+                          label: Text('Dark', maxLines: 1, softWrap: false),
                         ),
                       ],
                       selected: {profile.themeMode},
@@ -540,11 +540,144 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.dark_mode_outlined),
+                    title: const Text('AMOLED black'),
+                    subtitle: const Text('Pure black surfaces in dark mode'),
+                    value: profile.amoledBlack,
+                    onChanged: (value) => _saveProfile(
+                      context,
+                      ref,
+                      profile.copyWith(amoledBlack: value),
+                      message: value
+                          ? 'AMOLED black enabled'
+                          : 'AMOLED black disabled',
+                    ),
+                  ),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.palette_outlined),
+                    title: const Text('Dynamic color'),
+                    subtitle: const Text(
+                      'Use colors from your wallpaper where supported',
+                    ),
+                    value: profile.dynamicColor,
+                    onChanged: (value) => _saveProfile(
+                      context,
+                      ref,
+                      profile.copyWith(dynamicColor: value),
+                      message: value
+                          ? 'Dynamic color enabled'
+                          : 'Dynamic color disabled',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
-                    'Units',
+                    'Accent color',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      for (final option in AppTheme.accentColors.entries)
+                        Semantics(
+                          button: true,
+                          selected:
+                              profile.accentColor == option.value.toARGB32(),
+                          label: '${option.key} accent color',
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () => _saveProfile(
+                              context,
+                              ref,
+                              profile.copyWith(
+                                accentColor: option.value.toARGB32(),
+                              ),
+                              message: '${option.key} accent selected',
+                            ),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: option.value,
+                                border: Border.all(
+                                  color: profile.accentColor ==
+                                          option.value.toARGB32()
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
+                              ),
+                              child: profile.accentColor ==
+                                      option.value.toARGB32()
+                                  ? const Icon(Icons.check, color: Colors.white)
+                                  : null,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      const Icon(Icons.text_fields_outlined),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Font size',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            Text(
+                              '${(profile.fontScale * 100).round()}% of normal',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Slider(
+                    min: 0.8,
+                    max: 1.4,
+                    divisions: 12,
+                    value: profile.fontScale.clamp(0.8, 1.4).toDouble(),
+                    semanticFormatterCallback: (value) =>
+                        '${(value * 100).round()} percent',
+                    onChanged: (value) {
+                      ref
+                          .read(profileProvider.notifier)
+                          .update(profile.copyWith(fontScale: value));
+                    },
+                  ),
+                  Text(
+                    'The quick brown fox jumps over the lazy dog.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.label_outline),
+                    title: const Text('Navigation labels'),
+                    subtitle: const Text('Show text labels under tabs'),
+                    value: profile.showNavigationLabels,
+                    onChanged: (value) => _saveProfile(
+                      context,
+                      ref,
+                      profile.copyWith(showNavigationLabels: value),
+                      message: value
+                          ? 'Navigation labels shown'
+                          : 'Navigation labels hidden',
+                    ),
+                  ),
+                  const Divider(height: 24),
+                  Text('Units', style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
                   Semantics(
                     label: 'Unit system',
@@ -667,11 +800,7 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       for (var i = 0; i < reminders.length; i++) ...[
                         if (i > 0)
-                          const Divider(
-                            height: 1,
-                            indent: 16,
-                            endIndent: 16,
-                          ),
+                          const Divider(height: 1, indent: 16, endIndent: 16),
                         _reminderTile(context, ref, reminders[i]),
                       ],
                     ],

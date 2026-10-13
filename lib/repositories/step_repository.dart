@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../models/achievement.dart';
@@ -15,6 +16,7 @@ import '../services/settings_service.dart';
 import '../services/step_tracker_service.dart';
 import '../utils/constants.dart';
 import '../utils/health_calculations.dart';
+import '../utils/step_counter_math.dart';
 import '../utils/stats_calculator.dart';
 
 /// Orchestrates step counting: turns raw sensor values into persisted
@@ -40,6 +42,7 @@ class StepRepository {
 
   final StreamController<DayRecord> _todayController =
       StreamController<DayRecord>.broadcast();
+  Future<void> _sensorWriteQueue = Future<void>.value();
 
   DayRecord _today = DayRecord(date: DateTime.now());
 
@@ -60,11 +63,15 @@ class StepRepository {
   /// Loads today's record and subscribes to the sensor. Call once at startup.
   Future<void> initialize() async {
     final now = DateTime.now();
-    _today = await db.getDay(DayRecord.dateKeyFor(now)) ??
-        DayRecord(date: now);
+    _today = await db.getDay(DayRecord.dateKeyFor(now)) ?? DayRecord(date: now);
     if (!_todayController.isClosed) _todayController.add(_today);
 
-    tracker.cumulativeSteps.listen(_onSensorEvent);
+    tracker.cumulativeSteps.listen(_queueSensorEvent);
+    // Recover the latest reading saved by the native foreground service if
+    // Flutter was not running when the sensor event arrived.
+    final prefs = await settings.prefsForBackground();
+    final cachedReading = prefs.getInt(AppConstants.prefsNativeSensorLatest);
+    if (cachedReading != null) await recordSensorReading(cachedReading);
     // Evaluate achievements once at startup (catches unlocks earned while
     // the app was dead).
     await evaluateAchievements(notify: false);
@@ -74,34 +81,53 @@ class StepRepository {
   /// import or manual correction).
   Future<void> refreshToday() async {
     final now = DateTime.now();
-    _today =
-        await db.getDay(DayRecord.dateKeyFor(now)) ?? DayRecord(date: now);
+    _today = await db.getDay(DayRecord.dateKeyFor(now)) ?? DayRecord(date: now);
     if (!_todayController.isClosed) _todayController.add(_today);
   }
 
-  Future<void> _onSensorEvent(int cumulative) async {
+  void _queueSensorEvent(int cumulative) {
+    _sensorWriteQueue = _sensorWriteQueue.then((_) async {
+      try {
+        await recordSensorReading(cumulative);
+      } catch (error, stackTrace) {
+        debugPrint(
+          'Could not persist step sensor reading: $error\n$stackTrace',
+        );
+      }
+    });
+  }
+
+  /// Persists one cumulative hardware reading. Also called by WorkManager
+  /// when the app isolate is not running.
+  Future<void> recordSensorReading(int cumulative) async {
     final now = DateTime.now();
     final todayKey = DayRecord.dateKeyFor(now);
 
-    var baseline = await settings.getSensorBaseline();
+    final baseline = await settings.getSensorBaseline();
     final baselineDay = await settings.getBaselineDay();
     final last = await settings.getLastSensorValue();
+    final calculation = StepCounterMath.calculate(
+      cumulative: cumulative,
+      storedBaseline: baseline,
+      baselineDay: baselineDay,
+      lastSensorValue: last,
+      todayKey: todayKey,
+    );
 
-    final rebooted = last != null && cumulative < last;
-    final newDay = baseline == null || baselineDay != todayKey;
-    if (rebooted || newDay) {
-      baseline = cumulative;
-      await settings.setSensorBaseline(cumulative);
+    if (baseline != calculation.baseline || baselineDay != todayKey) {
+      await settings.setSensorBaseline(calculation.baseline);
       await settings.setBaselineDay(todayKey);
     }
     await settings.setLastSensorValue(cumulative);
 
     // Sanity clamp: no human walks 200k steps in a day.
-    // (baseline is always set above: fresh installs and reboots re-baseline.)
-    final steps = (cumulative - baseline).clamp(0, 200000);
+    final steps = calculation.steps;
 
     final profile = await settings.loadProfile();
-    final m = HealthCalculations.metricsForSteps(steps: steps, profile: profile);
+    final m = HealthCalculations.metricsForSteps(
+      steps: steps,
+      profile: profile,
+    );
 
     _today = DayRecord(
       date: now,

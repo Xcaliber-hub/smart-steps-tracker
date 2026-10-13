@@ -14,6 +14,7 @@ import '../widgets/goal_progress_ring.dart';
 import '../widgets/history_section.dart';
 import '../widgets/section_header.dart';
 import '../widgets/stat_card.dart';
+import '../widgets/streak_flame_icon.dart';
 
 /// Home tab: today's step count, goal ring, quick stats and streak.
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -26,6 +27,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   late final ConfettiController _confetti;
+  int? _lastKnownStreak;
 
   @override
   void initState() {
@@ -64,12 +66,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Celebrate the moment the goal is first reached each day.
     ref.listen<AsyncValue<DayRecord>>(todayRecordProvider, (previous, next) {
       final goal = ref.read(profileProvider).dailyGoal;
-      final prevProgress =
-          _progressOf(previous?.valueOrNull, goal);
+      final prevProgress = _progressOf(previous?.valueOrNull, goal);
       final nextProgress = _progressOf(next.valueOrNull, goal);
-      if (prevProgress < 1.0 && nextProgress >= 1.0) {
+      if (previous?.valueOrNull != null &&
+          prevProgress < 1.0 &&
+          nextProgress >= 1.0) {
         HapticFeedback.heavyImpact();
         _confetti.play();
+        ref.invalidate(statsProvider(StatsPeriod.week));
       }
     });
 
@@ -77,6 +81,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final profile = ref.watch(profileProvider);
     final sensor = ref.watch(sensorAvailableProvider);
     final weekStats = ref.watch(statsProvider(StatsPeriod.week));
+    final loadedStreak = weekStats.valueOrNull?.currentStreak;
+    if (loadedStreak != null) _lastKnownStreak = loadedStreak;
+    final streak = _lastKnownStreak ?? 0;
+    final streakDataReady = _lastKnownStreak != null;
 
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -95,11 +103,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           data: (record) {
             final progress = _progressOf(record, profile.dailyGoal);
-            final streak = weekStats.valueOrNull?.currentStreak ?? 0;
             final name = profile.name.trim();
-            final greeting = name.isEmpty
-                ? _greeting()
-                : '${_greeting()}, $name';
+            final greeting =
+                name.isEmpty ? _greeting() : '${_greeting()}, $name';
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 16,
@@ -122,9 +128,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   Text(
                     Formatters.date(DateTime.now()),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(color: colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 24),
                   Center(
@@ -223,6 +230,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         label: 'Current streak',
                         value: '$streak ${streak == 1 ? 'day' : 'days'}',
                         icon: Icons.whatshot,
+                        iconWidget: StreakFlameIcon(
+                          streak: streak,
+                          dataReady: streakDataReady,
+                        ),
                       ),
                     ],
                   ),

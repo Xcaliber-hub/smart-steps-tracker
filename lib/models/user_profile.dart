@@ -24,6 +24,11 @@ class UserProfile {
 
   final UnitSystem unitSystem;
   final ThemeMode themeMode;
+  final bool amoledBlack;
+  final bool dynamicColor;
+  final int accentColor;
+  final double fontScale;
+  final bool showNavigationLabels;
 
   // Notification toggles.
   final bool notificationsEnabled;
@@ -48,6 +53,11 @@ class UserProfile {
     this.dailyGoal = 10000,
     this.unitSystem = UnitSystem.metric,
     this.themeMode = ThemeMode.system,
+    this.amoledBlack = false,
+    this.dynamicColor = false,
+    this.accentColor = 0xFFB08968,
+    this.fontScale = 1.0,
+    this.showNavigationLabels = true,
     this.notificationsEnabled = true,
     this.morningMotivation = true,
     this.goalReachedAlert = true,
@@ -67,6 +77,11 @@ class UserProfile {
     int? dailyGoal,
     UnitSystem? unitSystem,
     ThemeMode? themeMode,
+    bool? amoledBlack,
+    bool? dynamicColor,
+    int? accentColor,
+    double? fontScale,
+    bool? showNavigationLabels,
     bool? notificationsEnabled,
     bool? morningMotivation,
     bool? goalReachedAlert,
@@ -85,6 +100,11 @@ class UserProfile {
       dailyGoal: dailyGoal ?? this.dailyGoal,
       unitSystem: unitSystem ?? this.unitSystem,
       themeMode: themeMode ?? this.themeMode,
+      amoledBlack: amoledBlack ?? this.amoledBlack,
+      dynamicColor: dynamicColor ?? this.dynamicColor,
+      accentColor: accentColor ?? this.accentColor,
+      fontScale: fontScale ?? this.fontScale,
+      showNavigationLabels: showNavigationLabels ?? this.showNavigationLabels,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       morningMotivation: morningMotivation ?? this.morningMotivation,
       goalReachedAlert: goalReachedAlert ?? this.goalReachedAlert,
@@ -108,6 +128,11 @@ class UserProfile {
       'dailyGoal': dailyGoal,
       'unitSystem': unitSystem.name,
       'themeMode': themeMode.name,
+      'amoledBlack': amoledBlack,
+      'dynamicColor': dynamicColor,
+      'accentColor': accentColor,
+      'fontScale': fontScale,
+      'showNavigationLabels': showNavigationLabels,
       'notificationsEnabled': notificationsEnabled,
       'morningMotivation': morningMotivation,
       'goalReachedAlert': goalReachedAlert,
@@ -153,6 +178,11 @@ class UserProfile {
       dailyGoal: (json['dailyGoal'] as num?)?.toInt() ?? 10000,
       unitSystem: unitSystem,
       themeMode: themeMode,
+      amoledBlack: (json['amoledBlack'] as bool?) ?? false,
+      dynamicColor: (json['dynamicColor'] as bool?) ?? false,
+      accentColor: (json['accentColor'] as num?)?.toInt() ?? 0xFFB08968,
+      fontScale: (json['fontScale'] as num?)?.toDouble() ?? 1.0,
+      showNavigationLabels: (json['showNavigationLabels'] as bool?) ?? true,
       notificationsEnabled: (json['notificationsEnabled'] as bool?) ?? true,
       morningMotivation: (json['morningMotivation'] as bool?) ?? true,
       goalReachedAlert: (json['goalReachedAlert'] as bool?) ?? true,

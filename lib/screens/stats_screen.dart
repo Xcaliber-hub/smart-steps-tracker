@@ -10,6 +10,7 @@ import '../viewmodels/providers.dart';
 import '../widgets/heatmap_calendar.dart';
 import '../widgets/section_header.dart';
 import '../widgets/stat_card.dart';
+import '../widgets/streak_flame_icon.dart';
 import '../widgets/steps_bar_chart.dart';
 import '../widgets/steps_line_chart.dart';
 
@@ -124,6 +125,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   value:
                       '${s.currentStreak} ${s.currentStreak == 1 ? 'day' : 'days'}',
                   icon: Icons.whatshot,
+                  iconWidget: StreakFlameIcon(streak: s.currentStreak),
                 ),
                 StatCard(
                   label: 'Lifetime steps',

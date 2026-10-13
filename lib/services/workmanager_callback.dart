@@ -5,10 +5,12 @@ import 'package:flutter/widgets.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../models/day_record.dart';
+import '../repositories/step_repository.dart';
 import '../utils/constants.dart';
 import 'database_service.dart';
 import 'notification_service.dart';
 import 'settings_service.dart';
+import 'step_tracker_service.dart';
 
 /// Entry point for WorkManager background tasks.
 ///
@@ -21,10 +23,8 @@ import 'settings_service.dart';
 ///   reminder re-scheduling, achievement bookkeeping.
 /// - [AppConstants.wmTaskCheckReminders] (hourly): inactivity detection.
 ///
-/// Note: the background isolate cannot read the live step-counter stream;
-/// step reconciliation happens on the next sensor event in the main isolate
-/// (see [StepTrackerService] docs). These tasks therefore focus on
-/// maintenance that does not need live sensor data.
+/// The native foreground service stores the most recent hardware counter in
+/// shared preferences; both tasks reconcile that durable snapshot into SQLite.
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
@@ -66,6 +66,7 @@ Future<void> _doMaintenance(
 
   final notifications = NotificationService();
   await notifications.init();
+  await _syncLatestSensorReading(db, settings, notifications);
   final profile = await settings.loadProfile();
   final reminders = await db.getReminders();
   await notifications.rescheduleAll(profile: profile, reminders: reminders);
@@ -78,6 +79,10 @@ Future<void> _checkInactivity(
   DatabaseService db,
   SettingsService settings,
 ) async {
+  final notifications = NotificationService();
+  await notifications.init();
+  await _syncLatestSensorReading(db, settings, notifications);
+
   final profile = await settings.loadProfile();
   if (!profile.notificationsEnabled || !profile.inactivityAlert) return;
 
@@ -102,12 +107,30 @@ Future<void> _checkInactivity(
 
   // Two consecutive hourly checks with (almost) no new steps → nudge.
   if (now.difference(lastCheck).inMinutes >= 90 && steps - lastSteps < 100) {
-    final notifications = NotificationService();
-    await notifications.init();
     await notifications.showNow(
       id: AppConstants.idInactivity,
       title: 'Time to move',
       body: 'You have been still for a while. A short walk does wonders.',
     );
   }
+}
+
+/// Replays the last cumulative sensor value checkpointed by the native
+/// foreground service, even when the Flutter UI isolate is not running.
+Future<void> _syncLatestSensorReading(
+  DatabaseService db,
+  SettingsService settings,
+  NotificationService notifications,
+) async {
+  final prefs = await settings.prefsForBackground();
+  final cumulative = prefs.getInt(AppConstants.prefsNativeSensorLatest);
+  if (cumulative == null) return;
+
+  final repository = StepRepository(
+    db: db,
+    settings: settings,
+    tracker: StepTrackerService(),
+    notifications: notifications,
+  );
+  await repository.recordSensorReading(cumulative);
 }
