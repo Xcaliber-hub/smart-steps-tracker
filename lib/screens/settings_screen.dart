@@ -25,12 +25,10 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _saveProfile(
     BuildContext context,
     WidgetRef ref,
-    UserProfile updated, {
-    String message = 'Saved',
-  }) async {
+    UserProfile updated,
+  ) async {
     await ref.read(profileProvider.notifier).update(updated);
     HapticFeedback.mediumImpact();
-    if (context.mounted) _snack(context, message);
   }
 
   /// Generic number-editing dialog. Returns the entered value, or null.
@@ -132,12 +130,7 @@ class SettingsScreen extends ConsumerWidget {
         );
       return;
     }
-    await _saveProfile(
-      context,
-      ref,
-      profile.copyWith(name: value),
-      message: value.isEmpty ? 'Name cleared' : 'Name updated',
-    );
+    await _saveProfile(context, ref, profile.copyWith(name: value));
   }
 
   Future<void> _editHeight(BuildContext context, WidgetRef ref) async {
@@ -200,12 +193,7 @@ class SettingsScreen extends ConsumerWidget {
       _snack(context, 'Please enter a goal between 500 and 100,000 steps.');
       return;
     }
-    await _saveProfile(
-      context,
-      ref,
-      profile.copyWith(dailyGoal: goal),
-      message: 'Daily goal set to ${Formatters.steps(goal)} steps',
-    );
+    await _saveProfile(context, ref, profile.copyWith(dailyGoal: goal));
   }
 
   Future<void> _pickGender(BuildContext context, WidgetRef ref) async {
@@ -293,9 +281,7 @@ class SettingsScreen extends ConsumerWidget {
     if (picked == null || !context.mounted) return;
     final minutes = picked.hour * 60 + picked.minute;
     await ref.read(remindersProvider.notifier).updateTime(reminder.id, minutes);
-    if (!context.mounted) return;
     HapticFeedback.selectionClick();
-    _snack(context, 'Reminder time set to ${Formatters.timeOfDay(minutes)}');
   }
 
   Future<void> _addReminder(BuildContext context, WidgetRef ref) async {
@@ -337,7 +323,6 @@ class SettingsScreen extends ConsumerWidget {
           ),
         );
     HapticFeedback.mediumImpact();
-    if (context.mounted) _snack(context, 'Reminder added');
   }
 
   // --- Backup -------------------------------------------------------------
@@ -348,9 +333,6 @@ class SettingsScreen extends ConsumerWidget {
       final backup = ref.read(backupServiceProvider);
       final path = await backup.exportCsv(days);
       await backup.shareFile(path, 'Stride CSV export');
-      if (context.mounted) {
-        _snack(context, 'CSV exported (${days.length} days)');
-      }
     } catch (e) {
       if (context.mounted) _snack(context, 'Export failed: $e');
     }
@@ -363,9 +345,6 @@ class SettingsScreen extends ConsumerWidget {
       final backup = ref.read(backupServiceProvider);
       final path = await backup.exportJson(days, profile);
       await backup.shareFile(path, 'Stride JSON backup');
-      if (context.mounted) {
-        _snack(context, 'JSON backup exported (${days.length} days)');
-      }
     } catch (e) {
       if (context.mounted) _snack(context, 'Export failed: $e');
     }
@@ -384,9 +363,6 @@ class SettingsScreen extends ConsumerWidget {
         await ref.read(profileProvider.notifier).update(result.profile!);
       }
       ref.invalidate(allDaysProvider);
-      if (context.mounted) {
-        _snack(context, 'Imported ${result.days.length} days');
-      }
     } catch (e) {
       if (context.mounted) _snack(context, 'Import failed: $e');
     }
@@ -422,7 +398,6 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(allDaysProvider);
     ref.invalidate(statsProvider);
     HapticFeedback.heavyImpact();
-    if (context.mounted) _snack(context, 'All data has been deleted');
   }
 
   // --- Build --------------------------------------------------------------
@@ -536,7 +511,6 @@ class SettingsScreen extends ConsumerWidget {
                         context,
                         ref,
                         profile.copyWith(themeMode: selected.first),
-                        message: 'Theme updated',
                       ),
                     ),
                   ),
@@ -551,9 +525,6 @@ class SettingsScreen extends ConsumerWidget {
                       context,
                       ref,
                       profile.copyWith(amoledBlack: value),
-                      message: value
-                          ? 'AMOLED black enabled'
-                          : 'AMOLED black disabled',
                     ),
                   ),
                   SwitchListTile.adaptive(
@@ -568,9 +539,6 @@ class SettingsScreen extends ConsumerWidget {
                       context,
                       ref,
                       profile.copyWith(dynamicColor: value),
-                      message: value
-                          ? 'Dynamic color enabled'
-                          : 'Dynamic color disabled',
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -597,7 +565,6 @@ class SettingsScreen extends ConsumerWidget {
                               profile.copyWith(
                                 accentColor: option.value.toARGB32(),
                               ),
-                              message: '${option.key} accent selected',
                             ),
                             child: Container(
                               width: 48,
@@ -656,26 +623,6 @@ class SettingsScreen extends ConsumerWidget {
                           .update(profile.copyWith(fontScale: value));
                     },
                   ),
-                  Text(
-                    'The quick brown fox jumps over the lazy dog.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    secondary: const Icon(Icons.label_outline),
-                    title: const Text('Navigation labels'),
-                    subtitle: const Text('Show text labels under tabs'),
-                    value: profile.showNavigationLabels,
-                    onChanged: (value) => _saveProfile(
-                      context,
-                      ref,
-                      profile.copyWith(showNavigationLabels: value),
-                      message: value
-                          ? 'Navigation labels shown'
-                          : 'Navigation labels hidden',
-                    ),
-                  ),
                   const Divider(height: 24),
                   Text('Units', style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
@@ -697,7 +644,6 @@ class SettingsScreen extends ConsumerWidget {
                         context,
                         ref,
                         profile.copyWith(unitSystem: selected.first),
-                        message: 'Units updated',
                       ),
                     ),
                   ),
@@ -718,9 +664,6 @@ class SettingsScreen extends ConsumerWidget {
                     context,
                     ref,
                     profile.copyWith(notificationsEnabled: value),
-                    message: value
-                        ? 'Notifications enabled'
-                        : 'Notifications disabled',
                   ),
                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16),
@@ -900,12 +843,7 @@ class SettingsScreen extends ConsumerWidget {
       subtitle: Text(subtitle),
       value: value && enabled,
       onChanged: enabled
-          ? (v) => _saveProfile(
-                context,
-                ref,
-                apply(profile, v),
-                message: '$title ${v ? 'on' : 'off'}',
-              )
+          ? (v) => _saveProfile(context, ref, apply(profile, v))
           : null,
     );
   }
@@ -953,7 +891,6 @@ class SettingsScreen extends ConsumerWidget {
             onPressed: () {
               ref.read(remindersProvider.notifier).remove(reminder.id);
               HapticFeedback.mediumImpact();
-              _snack(context, 'Reminder deleted');
             },
           ),
         ],
