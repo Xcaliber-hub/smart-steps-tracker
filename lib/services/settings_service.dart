@@ -63,6 +63,25 @@ class SettingsService {
   Future<void> setLastSensorValue(int value) async =>
       (await _instance).setInt(AppConstants.prefsLastSensorValue, value);
 
+  /// Wall-clock time (ms since epoch) of the last reading we recorded.
+  Future<int?> getLastSensorAt() async =>
+      (await _instance).getInt(AppConstants.prefsLastSensorAt);
+
+  Future<void> setLastSensorAt(int millis) async =>
+      (await _instance).setInt(AppConstants.prefsLastSensorAt, millis);
+
+  /// Version of the baseline bookkeeping that wrote the stored values.
+  Future<int> getStepMathVersion() async =>
+      (await _instance).getInt(AppConstants.prefsStepMathVersion) ?? 0;
+
+  Future<void> setStepMathVersion(int version) async =>
+      (await _instance).setInt(AppConstants.prefsStepMathVersion, version);
+
+  /// Re-reads preferences from disk. The WorkManager isolate and the native
+  /// foreground service write the same file, and each isolate keeps its own
+  /// in-memory copy that would otherwise go stale.
+  Future<void> reload() async => (await _instance).reload();
+
   /// `yyyy-MM-dd` of the day the baseline belongs to.
   Future<String?> getBaselineDay() async =>
       (await _instance).getString(AppConstants.prefsLastSyncDay);

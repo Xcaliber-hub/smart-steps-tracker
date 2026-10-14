@@ -129,7 +129,7 @@ Dependency notes:
 ## Background behavior & limitations
 
 - **Background capture.** An Android health foreground service keeps the step-counter sensor listener active while the Flutter UI is closed, stores the latest hardware reading, and restarts after process reclamation. WorkManager reconciles durable readings into daily records and reminders; tracking is also restored after reboot when permission remains granted. The service shows an ongoing notification. Android's force-stop action, revoked permission, missing step-counter hardware, or manufacturer battery restrictions can still stop collection.
-- **Midnight handling.** At the first reading for a new calendar day, the previous sensor reading is used as the day boundary so steps after midnight are not discarded. A device reboot is detected separately and the counter is rebased from zero.
+- **Midnight handling.** At the first reading for a new calendar day, the previous sensor reading is used as the day boundary so steps after midnight are not discarded. A reading that is lower than the previous one is only accepted as a device reboot when it is small enough to be steps walked since boot; otherwise it is treated as a stale reading and ignored, so the daily total can never jump to the "steps since boot" figure. After a real reboot today's earlier steps are carried forward.
 - **Floors are always 0** — the pedometer plugin exposes no floor data.
 - **Estimates, not medical data.** Calorie, distance, and active-minute values are rough calculations, not medical advice.
 - **Inexact reminders.** The exact-alarm permission is not requested; reminders may arrive a few minutes early or late.

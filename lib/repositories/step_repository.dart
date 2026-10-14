@@ -24,9 +24,10 @@ import '../utils/stats_calculator.dart';
 /// evaluates achievements.
 ///
 /// Sensor math: the hardware counter reports steps since boot. We keep a
-/// per-day `baseline`; today's steps = `current - baseline`. A backwards
-/// jump means the device rebooted, so we re-baseline. A baseline from a
-/// previous calendar day means a new day started.
+/// per-day `baseline`; today's steps = `current - baseline`. A baseline from a
+/// previous calendar day means a new day started. A backwards jump is either
+/// a reboot or a stale reading arriving late; see [StepCounterMath] for how
+/// the two are told apart.
 class StepRepository {
   StepRepository({
     required this.db,
@@ -68,10 +69,9 @@ class StepRepository {
 
     tracker.cumulativeSteps.listen(_queueSensorEvent);
     // Recover the latest reading saved by the native foreground service if
-    // Flutter was not running when the sensor event arrived.
-    final prefs = await settings.prefsForBackground();
-    final cachedReading = prefs.getInt(AppConstants.prefsNativeSensorLatest);
-    if (cachedReading != null) await recordSensorReading(cachedReading);
+    // Flutter was not running when the sensor event arrived. Goes through the
+    // same queue as live events so the two can never interleave.
+    await _enqueue(syncNativeCheckpoint);
     // Evaluate achievements once at startup (catches unlocks earned while
     // the app was dead).
     await evaluateAchievements(notify: false);
@@ -86,39 +86,126 @@ class StepRepository {
   }
 
   void _queueSensorEvent(int cumulative) {
-    _sensorWriteQueue = _sensorWriteQueue.then((_) async {
+    unawaited(_enqueue(() => recordSensorReading(cumulative)));
+  }
+
+  /// Runs [job] after every previously queued sensor job has finished, so
+  /// reads and writes of the baseline bookkeeping never interleave.
+  Future<void> _enqueue(Future<void> Function() job) {
+    final next = _sensorWriteQueue.then((_) async {
       try {
-        await recordSensorReading(cumulative);
+        await job();
       } catch (error, stackTrace) {
         debugPrint(
           'Could not persist step sensor reading: $error\n$stackTrace',
         );
       }
     });
+    _sensorWriteQueue = next;
+    return next;
+  }
+
+  /// Replays the latest reading checkpointed by the native foreground
+  /// service. Used at startup and by WorkManager when the UI isolate is not
+  /// running.
+  ///
+  /// The checkpoint is skipped unless it is newer than the last reading we
+  /// recorded. Replaying an older value would look like the counter went
+  /// backwards.
+  Future<void> syncNativeCheckpoint() async {
+    final prefs = await settings.prefsForBackground();
+    await prefs.reload();
+    final cumulative = prefs.getInt(AppConstants.prefsNativeSensorLatest);
+    final updatedAtMs = prefs.getInt(AppConstants.prefsNativeSensorUpdatedAt);
+    if (cumulative == null || updatedAtMs == null) return;
+    final recordedAtMs = prefs.getInt(AppConstants.prefsLastSensorAt) ?? 0;
+    if (updatedAtMs <= recordedAtMs) return;
+    await recordSensorReading(
+      cumulative,
+      readingTime: DateTime.fromMillisecondsSinceEpoch(updatedAtMs),
+    );
+  }
+
+  /// One-time repair for installs that ran the older step math.
+  ///
+  /// That version could mistake a stale reading for a reboot and persist a
+  /// zero baseline, which makes "steps today" equal "steps since boot". The
+  /// only trustworthy fix is to start from a known-good point: re-baseline on
+  /// a *fresh* reading, so today's count restarts from zero.
+  ///
+  /// Returns `false` while the repair is still pending and [at] is too old to
+  /// serve as the new baseline; the caller should skip that reading.
+  Future<bool> _ensureStepMathVersion(
+    int cumulative,
+    DateTime at,
+    DateTime now,
+    String todayKey,
+  ) async {
+    final version = await settings.getStepMathVersion();
+    if (version >= AppConstants.stepMathVersion) return true;
+    if (now.difference(at) > const Duration(minutes: 5)) return false;
+
+    await settings.setSensorBaseline(cumulative);
+    await settings.setBaselineDay(todayKey);
+    await settings.setLastSensorValue(cumulative);
+    await settings.setLastSensorAt(at.millisecondsSinceEpoch);
+    await settings.setStepMathVersion(AppConstants.stepMathVersion);
+    return true;
   }
 
   /// Persists one cumulative hardware reading. Also called by WorkManager
   /// when the app isolate is not running.
-  Future<void> recordSensorReading(int cumulative) async {
+  ///
+  /// [readingTime] is when the sensor produced the value; it defaults to now
+  /// for live events and is the checkpoint time for replayed ones.
+  Future<void> recordSensorReading(
+    int cumulative, {
+    DateTime? readingTime,
+  }) async {
     final now = DateTime.now();
+    final at = readingTime ?? now;
     final todayKey = DayRecord.dateKeyFor(now);
+
+    // The WorkManager isolate and the native service write the same
+    // preferences file; pick up their latest values before deciding anything.
+    await settings.reload();
+    if (!await _ensureStepMathVersion(cumulative, at, now, todayKey)) return;
 
     final baseline = await settings.getSensorBaseline();
     final baselineDay = await settings.getBaselineDay();
     final last = await settings.getLastSensorValue();
+    final lastAtMs = await settings.getLastSensorAt();
+    final sinceLast = lastAtMs == null
+        ? null
+        : at.difference(DateTime.fromMillisecondsSinceEpoch(lastAtMs));
+    final previousSteps = (await db.getDay(todayKey))?.steps ?? 0;
+
     final calculation = StepCounterMath.calculate(
       cumulative: cumulative,
       storedBaseline: baseline,
       baselineDay: baselineDay,
       lastSensorValue: last,
       todayKey: todayKey,
+      previousSteps: previousSteps,
+      sinceLastReading: sinceLast,
     );
+
+    if (!calculation.accepted) {
+      debugPrint(
+        'Ignored out-of-order step reading $cumulative (last seen $last).',
+      );
+      return;
+    }
 
     if (baseline != calculation.baseline || baselineDay != todayKey) {
       await settings.setSensorBaseline(calculation.baseline);
       await settings.setBaselineDay(todayKey);
     }
     await settings.setLastSensorValue(cumulative);
+    final atMs = at.millisecondsSinceEpoch;
+    if (lastAtMs == null || atMs > lastAtMs) {
+      await settings.setLastSensorAt(atMs);
+    }
 
     // Sanity clamp: no human walks 200k steps in a day.
     final steps = calculation.steps;

@@ -117,20 +117,19 @@ Future<void> _checkInactivity(
 
 /// Replays the last cumulative sensor value checkpointed by the native
 /// foreground service, even when the Flutter UI isolate is not running.
+///
+/// The repository skips the checkpoint when the app already recorded a newer
+/// reading, so this can never move today's count backwards.
 Future<void> _syncLatestSensorReading(
   DatabaseService db,
   SettingsService settings,
   NotificationService notifications,
 ) async {
-  final prefs = await settings.prefsForBackground();
-  final cumulative = prefs.getInt(AppConstants.prefsNativeSensorLatest);
-  if (cumulative == null) return;
-
   final repository = StepRepository(
     db: db,
     settings: settings,
     tracker: StepTrackerService(),
     notifications: notifications,
   );
-  await repository.recordSensorReading(cumulative);
+  await repository.syncNativeCheckpoint();
 }

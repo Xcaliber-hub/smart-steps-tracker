@@ -13,11 +13,17 @@ class AppConstants {
   static const String prefsNativeSensorLatest = 'native_sensor_latest';
   static const String prefsNativeSensorUpdatedAt =
       'native_sensor_updated_at_ms';
+  static const String prefsLastSensorAt = 'last_sensor_at_ms';
+  static const String prefsStepMathVersion = 'step_math_version';
   static const String prefsOnboardingDone = 'onboarding_done';
   static const String prefsGoalNotifiedDay = 'goal_notified_day';
   static const String prefsHalfwayNotifiedDay = 'halfway_notified_day';
   static const String prefsLastActivitySteps = 'last_activity_steps';
   static const String prefsLastActivityCheck = 'last_activity_check_ms';
+
+  /// Bump when the step-baseline bookkeeping changes in a way that needs a
+  /// one-time re-baseline of existing installs (see StepRepository).
+  static const int stepMathVersion = 2;
 
   // --- Database ---------------------------------------------------------
   static const String dbName = 'smart_steps.db';

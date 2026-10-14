@@ -109,9 +109,95 @@ void main() {
         baselineDay: '2026-10-13',
         lastSensorValue: 90000,
         todayKey: '2026-10-13',
+        sinceLastReading: const Duration(minutes: 30),
       );
+      expect(result.accepted, isTrue);
       expect(result.baseline, 0);
       expect(result.steps, 55);
+    });
+
+    test('keeps earlier steps from today when the device reboots', () {
+      final result = StepCounterMath.calculate(
+        cumulative: 55,
+        storedBaseline: 87000,
+        baselineDay: '2026-10-13',
+        lastSensorValue: 90000,
+        todayKey: '2026-10-13',
+        previousSteps: 3000,
+        sinceLastReading: const Duration(minutes: 30),
+      );
+      expect(result.accepted, isTrue);
+      expect(result.baseline, -3000);
+      expect(result.steps, 3055);
+
+      // The next reading continues from the carried baseline.
+      final next = StepCounterMath.calculate(
+        cumulative: 80,
+        storedBaseline: result.baseline,
+        baselineDay: '2026-10-13',
+        lastSensorValue: 55,
+        todayKey: '2026-10-13',
+        previousSteps: result.steps,
+        sinceLastReading: const Duration(seconds: 20),
+      );
+      expect(next.steps, 3080);
+    });
+
+    test('ignores a stale reading instead of treating it as a reboot', () {
+      // Regression: a cached reading that is slightly older than the live one
+      // used to reset the baseline to zero, so today's steps became the whole
+      // "steps since boot" counter (57k steps after walking under 3k).
+      final result = StepCounterMath.calculate(
+        cumulative: 57300,
+        storedBaseline: 54450,
+        baselineDay: '2026-10-14',
+        lastSensorValue: 57351,
+        todayKey: '2026-10-14',
+        previousSteps: 2901,
+        sinceLastReading: const Duration(seconds: 3),
+      );
+      expect(result.accepted, isFalse);
+      expect(result.steps, 2901);
+      expect(result.baseline, 54450);
+    });
+
+    test('ignores a stale reading even when the last one is minutes old', () {
+      final result = StepCounterMath.calculate(
+        cumulative: 57000,
+        storedBaseline: 54450,
+        baselineDay: '2026-10-14',
+        lastSensorValue: 57351,
+        todayKey: '2026-10-14',
+        previousSteps: 2901,
+        sinceLastReading: const Duration(minutes: 15),
+      );
+      expect(result.accepted, isFalse);
+    });
+
+    test('a reboot on a new day starts from the post-boot steps', () {
+      final result = StepCounterMath.calculate(
+        cumulative: 55,
+        storedBaseline: 80000,
+        baselineDay: '2026-10-12',
+        lastSensorValue: 90000,
+        todayKey: '2026-10-13',
+        previousSteps: 0,
+        sinceLastReading: const Duration(hours: 6),
+      );
+      expect(result.accepted, isTrue);
+      expect(result.baseline, 0);
+      expect(result.steps, 55);
+    });
+
+    test('never exceeds the daily sanity clamp', () {
+      final result = StepCounterMath.calculate(
+        cumulative: 900000,
+        storedBaseline: 0,
+        baselineDay: '2026-10-13',
+        lastSensorValue: 899990,
+        todayKey: '2026-10-13',
+      );
+      expect(result.steps, 200000);
     });
   });
 
