@@ -19,6 +19,7 @@ class GlowCard extends StatelessWidget {
     this.intensity = 1.0,
     this.borderRadius = 24,
     this.margin,
+    this.clipBehavior,
   });
 
   /// Card content.
@@ -36,6 +37,9 @@ class GlowCard extends StatelessWidget {
   /// Outer margin; defaults to the theme's card margin.
   final EdgeInsetsGeometry? margin;
 
+  /// Passed to the inner [Card]; use [Clip.antiAlias] for ink ripples.
+  final Clip? clipBehavior;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -52,7 +56,11 @@ class GlowCard extends StatelessWidget {
           radius: borderRadius,
           dark: theme.brightness == Brightness.dark,
         ),
-        child: Card(margin: EdgeInsets.zero, child: child),
+        child: Card(
+          margin: EdgeInsets.zero,
+          clipBehavior: clipBehavior,
+          child: child,
+        ),
       ),
     );
   }

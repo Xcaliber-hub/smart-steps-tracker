@@ -140,12 +140,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     crossAxisCount: 2,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 12,
+                    mainAxisSpacing: 16,
                     crossAxisSpacing: 12,
                     childAspectRatio: 1.05,
                     children: cards,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   const SectionHeader(title: 'Trends'),
                   allDays.when(
                     loading: () => const Padding(

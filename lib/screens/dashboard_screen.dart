@@ -206,7 +206,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     crossAxisCount: 2,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 12,
+                    mainAxisSpacing: 16,
                     crossAxisSpacing: 12,
                     childAspectRatio: 1.05,
                     children: [
@@ -239,7 +239,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   const HistorySection(),
                   const SizedBox(height: 16),
                 ],

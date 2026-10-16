@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 
-import 'metal_card.dart';
+import 'glow_card.dart';
 
 /// A small tappable card showing one headline metric.
 ///
@@ -81,7 +81,8 @@ class StatCard extends StatelessWidget {
       child: Semantics(
         label: '$label: $value',
         button: onTap != null,
-        child: MetalCard(
+        child: GlowCard(
+          intensity: 0.75,
           clipBehavior: Clip.antiAlias,
           child:
               onTap == null ? content : InkWell(onTap: onTap, child: content),
