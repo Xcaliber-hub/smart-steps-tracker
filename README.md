@@ -14,6 +14,7 @@ A privacy-friendly, open-source step counter for Android — tracks your daily s
 **Appearance**
 - System/light/dark themes, AMOLED black, optional wallpaper-based dynamic colors
 - Eight accent colors, adjustable text size, and optional navigation labels
+- Animated glow beam riding around the floating navigation dock
 
 **Goals**
 - Custom daily step goals

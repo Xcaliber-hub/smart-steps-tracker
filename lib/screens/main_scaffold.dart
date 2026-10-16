@@ -11,6 +11,7 @@ import 'dashboard_screen.dart';
 import 'stats_screen.dart';
 import 'achievements_screen.dart';
 import 'settings_screen.dart';
+import '../widgets/beam_border.dart';
 
 /// Root shell hosting the four main tabs of the app.
 ///
@@ -127,43 +128,46 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
               left: false,
               right: false,
               child: Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(36),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainer
-                            .withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(36),
-                        border: Border.all(
-                          color: colorScheme.outline.withValues(alpha: 0.1),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 28,
-                            offset: const Offset(0, 10),
+                child: BeamBorder(
+                  borderRadius: 36,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(36),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainer
+                              .withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(36),
+                          border: Border.all(
+                            color: colorScheme.outline.withValues(alpha: 0.1),
+                            width: 1,
                           ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (int i = 0; i < _items.length; i++)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
-                              child: _PillNavItem(
-                                data: _items[i],
-                                selected: _index == i,
-                                onTap: () => _onDestinationSelected(i),
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 28,
+                              offset: const Offset(0, 10),
                             ),
-                        ],
+                          ],
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (int i = 0; i < _items.length; i++)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: _PillNavItem(
+                                  data: _items[i],
+                                  selected: _index == i,
+                                  onTap: () => _onDestinationSelected(i),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
