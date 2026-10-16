@@ -62,6 +62,9 @@ class _BootScreenState extends ConsumerState<BootScreen> {
     final tracker = ref.read(stepTrackerServiceProvider);
     final repository = ref.read(stepRepositoryProvider);
 
+    await _attempt('Checking account setup…', () async {
+      await ref.read(firebaseAvailableProvider.future);
+    });
     await _attempt('Setting up notifications…', notifications.init);
     await _attempt('Scheduling background tasks…', () async {
       await Workmanager().initialize(callbackDispatcher);

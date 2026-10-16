@@ -3,6 +3,10 @@
 
 // ignore_for_file: avoid_public_notifier_properties
 
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/achievement.dart';
@@ -14,12 +18,28 @@ import '../repositories/settings_repository.dart';
 import '../repositories/step_repository.dart';
 import '../services/backup_service.dart';
 import '../services/database_service.dart';
+import '../services/firebase_service.dart';
+import '../services/group_service.dart';
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
 import '../services/step_tracker_service.dart';
 import '../utils/stats_calculator.dart';
 
 // --- Services ---------------------------------------------------------------
+
+final firebaseAvailableProvider = FutureProvider<bool>((ref) {
+  return FirebaseService.initialize();
+});
+
+final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+
+final authStateProvider = StreamProvider<User?>((ref) {
+  final ready = ref.watch(firebaseAvailableProvider).valueOrNull ?? false;
+  if (!ready) return Stream<User?>.value(null);
+  return ref.watch(authServiceProvider).authStateChanges;
+});
+
+final groupServiceProvider = Provider<GroupService>((ref) => GroupService());
 
 final databaseServiceProvider =
     Provider<DatabaseService>((ref) => DatabaseService());
@@ -35,6 +55,59 @@ final backupServiceProvider =
 
 final stepTrackerServiceProvider =
     Provider<StepTrackerService>((ref) => StepTrackerService());
+
+final myGroupsProvider =
+    StreamProvider.family<List<GroupSummary>, String>((ref, uid) {
+  return ref.watch(groupServiceProvider).watchGroups(uid);
+});
+
+final groupMembersProvider =
+    StreamProvider.family<List<GroupMember>, String>((ref, groupId) {
+  return ref.watch(groupServiceProvider).watchMembers(groupId);
+});
+
+final groupSharedStepsProvider =
+    StreamProvider.family<List<SharedStepCount>, String>((ref, groupId) {
+  return ref.watch(groupServiceProvider).watchSharedSteps(groupId);
+});
+
+final sharingOptInProvider = FutureProvider.family<bool, String>((ref, uid) {
+  return ref.watch(groupServiceProvider).sharingEnabled(uid);
+});
+
+/// Publishes a single current-day step total while the signed-in user has
+/// explicitly opted in. No profile or historical metrics are observed here.
+final stepSharingSyncProvider = Provider<void>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return;
+  final optedIn = ref.watch(sharingOptInProvider(user.uid)).valueOrNull ?? false;
+  if (!optedIn) return;
+
+  final groups = ref.watch(groupServiceProvider);
+  void publish(DayRecord record) {
+    unawaited(
+      groups
+          .publishTodaySteps(uid: user.uid, record: record)
+          .catchError((Object error, StackTrace stackTrace) {
+        debugPrint('Could not sync opted-in step total: $error');
+      }),
+    );
+  }
+
+  final current = ref.read(todayRecordProvider).valueOrNull;
+  if (current != null) publish(current);
+  ref.listen<AsyncValue<DayRecord>>(todayRecordProvider, (previous, next) {
+    final record = next.valueOrNull;
+    if (record != null && previous?.valueOrNull?.steps != record.steps) {
+      publish(record);
+    }
+  });
+  ref.listen<AsyncValue<List<GroupSummary>>>(myGroupsProvider(user.uid),
+      (previous, next) {
+    final record = ref.read(todayRecordProvider).valueOrNull;
+    if (record != null && next.valueOrNull != null) publish(record);
+  });
+});
 
 // --- Repositories -------------------------------------------------------------
 

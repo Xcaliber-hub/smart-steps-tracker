@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Smart Steps Tracker — a free and open-source step counter.
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -8,6 +9,8 @@ import '../models/day_record.dart';
 import '../repositories/step_repository.dart';
 import '../utils/constants.dart';
 import 'database_service.dart';
+import 'firebase_service.dart';
+import 'group_service.dart';
 import 'notification_service.dart';
 import 'settings_service.dart';
 import 'step_tracker_service.dart';
@@ -70,6 +73,23 @@ Future<void> _doMaintenance(
   final profile = await settings.loadProfile();
   final reminders = await db.getReminders();
   await notifications.rescheduleAll(profile: profile, reminders: reminders);
+  await _syncOptedInCloudSteps(db);
+}
+
+/// WorkManager runs this about every 15 minutes on Android. It uploads only
+/// the current local step total for a signed-in user who opted in.
+Future<void> _syncOptedInCloudSteps(DatabaseService db) async {
+  if (!await FirebaseService.initialize()) return;
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+  final groups = GroupService();
+  if (!await groups.sharingEnabled(user.uid)) {
+    await groups.clearStepShares(user.uid);
+    return;
+  }
+  final record = await db.getDay(DayRecord.dateKeyFor(DateTime.now()));
+  if (record == null) return;
+  await groups.publishTodaySteps(uid: user.uid, record: record);
 }
 
 /// Fires an inactivity nudge when no steps were recorded for a while during

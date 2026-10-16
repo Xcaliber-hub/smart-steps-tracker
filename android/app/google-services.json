@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "8359889970",
+    "project_id": "stride-b6121",
+    "storage_bucket": "stride-b6121.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:8359889970:android:267dd07b8d9ceb8198802b",
+        "android_client_info": {
+          "package_name": "com.smartsteps.smart_steps_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjOkEMfUDsIry227wjcrKYFcyTIViVilE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

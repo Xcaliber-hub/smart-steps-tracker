@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function member(groupId) {
+      return signedIn() && exists(
+        /databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)
+      );
+    }
+
+    function inviteIsValid(groupId, code) {
+      return code is string
+        && exists(/databases/$(database)/documents/invites/$(code))
+        && get(/databases/$(database)/documents/invites/$(code)).data.groupId == groupId
+        && get(/databases/$(database)/documents/invites/$(code)).data.expiresAt > request.time;
+    }
+
+    match /groups/{groupId} {
+      allow get, list: if member(groupId);
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['name', 'ownerUid', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 40;
+      allow update, delete: if false;
+
+      match /members/{uid} {
+        allow get: if (signedIn() && request.auth.uid == uid) || member(groupId);
+        allow list: if member(groupId);
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.uid == uid
+          && request.resource.data.keys().hasOnly([
+            'uid', 'displayName', 'role', 'joinedAt', 'inviteCode'
+          ])
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() <= 40
+          && (
+            (request.resource.data.role == 'owner'
+              && getAfter(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == uid)
+            || (request.resource.data.role == 'member'
+              && inviteIsValid(groupId, request.resource.data.inviteCode))
+          );
+        allow update: if signedIn()
+          && request.auth.uid == uid
+          && resource.data.uid == uid
+          && request.resource.data.keys().hasAll(['uid', 'displayName', 'role', 'joinedAt'])
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() <= 40
+          && (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName'])
+            || (resource.data.keys().hasAny(['inviteCode'])
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['inviteCode'])
+              && !request.resource.data.keys().hasAny(['inviteCode']))
+          );
+        allow delete: if signedIn()
+          && (request.auth.uid == uid
+            || get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid);
+      }
+
+      match /steps/{uid} {
+        allow get, list: if member(groupId);
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && member(groupId)
+          && request.resource.data.keys().hasOnly(['steps', 'updatedAt'])
+          && request.resource.data.keys().hasAll(['steps', 'updatedAt'])
+          && request.resource.data.steps is int
+          && request.resource.data.steps >= 0
+          && request.resource.data.steps <= 200000
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if signedIn() && request.auth.uid == uid && member(groupId);
+      }
+    }
+
+    match /users/{uid}/groups/{groupId} {
+      allow get, list: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && getAfter(/databases/$(database)/documents/groups/$(groupId)/members/$(uid)).data.uid == uid
+        && request.resource.data.groupId == groupId
+        && request.resource.data.name is string;
+      allow delete: if signedIn() && request.auth.uid == uid;
+      allow update: if false;
+    }
+
+    match /invites/{code} {
+      // Invite codes are high-entropy bearer tokens. Listing them is forbidden.
+      allow get: if signedIn()
+        && resource.data.expiresAt > request.time;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.keys().hasOnly(['groupId', 'groupName', 'createdBy', 'expiresAt', 'createdAt'])
+        && request.resource.data.groupName is string
+        && request.resource.data.groupName.size() <= 40
+        && member(request.resource.data.groupId)
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(7, 'd');
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+    }
+  }
+}

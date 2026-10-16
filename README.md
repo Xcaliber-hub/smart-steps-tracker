@@ -44,6 +44,12 @@ A privacy-friendly, open-source step counter for Android — tracks your daily s
 - Export daily history to CSV
 - Import/export database files via file picker
 
+**Friends & groups**
+- Email/password Firebase Authentication
+- Private groups with high-entropy invite codes that expire after 7 days
+- Optional sharing of only today's step total and its last-updated time
+- Age, height, weight, gender, step history, distance, calories, and goals stay local
+
 ## Screenshots
 
 *Screenshots coming soon — add screenshots here.*
@@ -62,10 +68,10 @@ ViewModels (Riverpod providers)
 Repositories (sensor-delta → DayRecord, StatsCalculator)
    │
    ▼
-Services (StepTrackerService, DatabaseService, NotificationService, SettingsService, BackupService)
+Services (StepTrackerService, DatabaseService, FirebaseService, GroupService, NotificationService, SettingsService, BackupService)
    │
    ▼
-Storage/Sensors (SQLite via sqflite, SharedPreferences, pedometer, WorkManager)
+Storage/Sensors (SQLite via sqflite, Firestore groups, SharedPreferences, pedometer, WorkManager)
 ```
 
 Key classes:
@@ -75,6 +81,8 @@ Key classes:
 | `StepTrackerService` | pedometer stream and native Android foreground-service lifecycle |
 | `StepRepository` | converts sensor deltas into `DayRecord`s |
 | `DatabaseService` | sqflite persistence |
+| `FirebaseService` / `AuthService` | optional Firebase bootstrap and email/password authentication |
+| `GroupService` | private group membership, invite codes, and opt-in current-day step totals |
 | `SettingsService` | SharedPreferences (goals, weight, height, preferences) |
 | `NotificationService` | local reminders |
 | `BackupService` | CSV export/import |
@@ -91,6 +99,43 @@ Key classes:
 flutter pub get
 flutter run
 ```
+
+### Firebase setup (optional; local tracking works without it)
+
+1. Create a Firebase project and register an Android app with application ID
+   `com.smartsteps.smart_steps_tracker`.
+2. Enable **Email/Password** under Firebase Authentication → Sign-in method.
+3. Create a Cloud Firestore database and deploy the included security rules:
+   `firebase deploy --only firestore:rules` (select your Firebase project in the
+   Firebase CLI first).
+4. Place the Android client config at `android/app/google-services.json` (the
+   supplied source archive includes it). The Google Services Gradle plugin
+   processes it, and the app initializes Firebase from the generated Android
+   resources by default. These client identifiers are not service-account
+   credentials; never include service-account keys in the app. For an explicit
+   build-time override, provide all four Dart options:
+
+   ```bash
+   flutter run \
+     --dart-define=FIREBASE_API_KEY=YOUR_API_KEY \
+     --dart-define=FIREBASE_APP_ID=YOUR_ANDROID_APP_ID \
+     --dart-define=FIREBASE_MESSAGING_SENDER_ID=YOUR_SENDER_ID \
+     --dart-define=FIREBASE_PROJECT_ID=YOUR_PROJECT_ID
+   ```
+
+   Supply the same `--dart-define` values to release builds when overriding the
+   Android config. Without a usable native config or all four Dart options, the
+   app stays in local-only mode and tracking remains available.
+5. In **Friends & groups**, create an account or sign in, then create a group
+   or join with an invite code. Sharing starts **off**. When enabled, Stride
+   writes only `steps` and `updatedAt` to each group; turning it off deletes
+   those documents. Foreground sensor changes sync immediately, and Android
+   WorkManager refreshes an opted-in total about every 15 minutes. A value
+   updated on a previous local calendar day appears as “Not shared today.”
+
+`firestore.rules` restricts group data to members, requires a valid invite for
+joining, prevents invite enumeration, and limits shared step documents to the
+count and server timestamp. Never deploy with Firestore in test mode.
 
 **Build APK**
 
@@ -125,6 +170,7 @@ Dependency notes:
 | `ACTIVITY_RECOGNITION` | required to read the step-counter sensor |
 | `POST_NOTIFICATIONS` | reminders and achievement notifications |
 | `RECEIVE_BOOT_COMPLETED` | lets scheduled background work resume after a reboot |
+| `INTERNET` | Firebase Authentication and Cloud Firestore when configured |
 | `SCHEDULE_EXACT_ALARM` | declared; the app uses inexact alarms, so exact alarms are never requested |
 | `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_HEALTH` | persistent step tracking with an ongoing notification |
 
@@ -144,15 +190,17 @@ smart-steps-tracker/
 ├── lib/
 │   ├── main.dart
 │   ├── models/        # DayRecord, achievement models, etc.
-│   ├── services/      # step tracking, database, notifications, settings, backup, WorkManager callback
+│   ├── services/      # step tracking, Firebase auth/groups, database, notifications, settings, backup
 │   ├── repositories/  # sensor-delta → DayRecord, stats aggregation
 │   ├── viewmodels/    # Riverpod providers
-│   ├── screens/       # home, stats, history, achievements, settings
+│   ├── screens/       # home, stats, history, achievements, groups, settings
 │   ├── widgets/       # reusable UI components
 │   ├── utils/         # helpers, formatters
 │   └── themes/        # Material 3 theme, dynamic color support
 ├── assets/
 ├── android/
+├── firebase.json
+├── firestore.rules
 └── pubspec.yaml
 ```
 
@@ -166,7 +214,8 @@ smart-steps-tracker/
 | Steps | `pedometer` |
 | Background | `workmanager` |
 | Permissions | `permission_handler` |
-| Database | `sqflite` |
+| Database | `sqflite` (local), `cloud_firestore` (private groups only) |
+| Authentication | `firebase_auth` (email/password) |
 | Preferences | `shared_preferences` |
 | Notifications | `flutter_local_notifications`, `timezone`, `flutter_timezone` |
 | Backup | `csv`, `share_plus`, `file_picker`, `path_provider` |

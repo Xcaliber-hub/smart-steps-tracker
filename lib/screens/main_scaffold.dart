@@ -10,10 +10,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dashboard_screen.dart';
 import 'stats_screen.dart';
 import 'achievements_screen.dart';
+import 'groups_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/beam_border.dart';
 
-/// Root shell hosting the four main tabs of the app.
+/// Root shell hosting the five main tabs of the app.
 ///
 /// Keeps each tab mounted while animating between them, and uses a floating
 /// glassmorphic pill-shaped navigation dock with icons and labels.
@@ -45,6 +46,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     DashboardScreen(),
     StatsScreen(),
     AchievementsScreen(),
+    GroupsScreen(),
     SettingsScreen(),
   ];
 
@@ -66,6 +68,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       selectedIcon: Icons.emoji_events,
       label: 'Awards',
       tooltip: 'Achievements',
+    ),
+    _NavItemData(
+      icon: Icons.groups_outlined,
+      selectedIcon: Icons.groups,
+      label: 'Groups',
+      tooltip: 'Friends and groups',
     ),
     _NavItemData(
       icon: Icons.settings_outlined,
@@ -163,6 +171,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                                 child: _PillNavItem(
                                   data: _items[i],
                                   selected: _index == i,
+                                  compact: MediaQuery.sizeOf(context).width < 400,
                                   onTap: () => _onDestinationSelected(i),
                                 ),
                               ),
@@ -186,11 +195,13 @@ class _PillNavItem extends StatelessWidget {
   const _PillNavItem({
     required this.data,
     required this.selected,
+    required this.compact,
     required this.onTap,
   });
 
   final _NavItemData data;
   final bool selected;
+  final bool compact;
   final VoidCallback onTap;
 
   @override
@@ -207,7 +218,7 @@ class _PillNavItem extends StatelessWidget {
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
           padding: EdgeInsets.symmetric(
-            horizontal: selected ? 14 : 12,
+            horizontal: selected ? (compact ? 8 : 14) : (compact ? 6 : 12),
             vertical: 10,
           ),
           decoration: BoxDecoration(

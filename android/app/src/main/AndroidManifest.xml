@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Step counting via the hardware step-counter sensor -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <!-- Local notifications (Android 13+ runtime permission) -->
