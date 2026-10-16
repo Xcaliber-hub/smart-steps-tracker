@@ -47,6 +47,7 @@ A privacy-friendly, open-source step counter for Android — tracks your daily s
 **Friends & groups**
 - Email/password Firebase Authentication
 - Private groups with high-entropy invite codes that expire after 7 days
+- Settings name is shown to private-group members; step sharing remains opt-in
 - Optional sharing of only today's step total and its last-updated time
 - Age, height, weight, gender, step history, distance, calories, and goals stay local
 
@@ -127,7 +128,10 @@ flutter run
    Android config. Without a usable native config or all four Dart options, the
    app stays in local-only mode and tracking remains available.
 5. In **Friends & groups**, create an account or sign in, then create a group
-   or join with an invite code. Sharing starts **off**. When enabled, Stride
+   or join with an invite code. Your Settings name is used as your group
+   display name and updates your roster entries when changed; until a Settings
+   name is set, the registration name is used. Group members see this name
+   whether or not step sharing is enabled. Sharing starts **off**. When enabled, Stride
    writes only `steps` and `updatedAt` to each group; turning it off deletes
    those documents. Foreground sensor changes sync immediately, and Android
    WorkManager refreshes an opted-in total about every 15 minutes. A value

@@ -246,7 +246,7 @@ class _AuthenticationPanelState extends State<_AuthenticationPanel> {
         ),
         const SizedBox(height: 12),
         const Text(
-          'Group members only see the display name you choose and, only after you opt in, today’s step total and last-updated time.',
+          'Your Settings name is your display name in private groups. Until you set one, Stride uses the name entered during registration. Only after you opt in will members see today’s step total and last-updated time.',
           textAlign: TextAlign.center,
         ),
       ],
@@ -259,9 +259,11 @@ class _SignedInGroups extends ConsumerWidget {
 
   final User user;
 
-  String get _displayName {
-    final name = user.displayName?.trim() ?? '';
-    return name.isEmpty ? 'Stride member' : name;
+  String _displayName(WidgetRef ref) {
+    final profileName = ref.read(profileProvider).name.trim();
+    if (profileName.isNotEmpty) return profileName;
+    final accountName = user.displayName?.trim() ?? '';
+    return accountName.isEmpty ? 'Stride member' : accountName;
   }
 
   Future<void> _createGroup(BuildContext context, WidgetRef ref) async {
@@ -288,7 +290,7 @@ class _SignedInGroups extends ConsumerWidget {
     try {
       final group = await ref.read(groupServiceProvider).createGroup(
             uid: user.uid,
-            displayName: _displayName,
+            displayName: _displayName(ref),
             name: name,
           );
       ref.invalidate(myGroupsProvider(user.uid));
@@ -329,7 +331,7 @@ class _SignedInGroups extends ConsumerWidget {
     try {
       final group = await ref.read(groupServiceProvider).joinByInvite(
             uid: user.uid,
-            displayName: _displayName,
+            displayName: _displayName(ref),
             code: code,
           );
       ref.invalidate(myGroupsProvider(user.uid));
@@ -508,7 +510,7 @@ class _SignedInGroups extends ConsumerWidget {
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
                 child: Text(
-                  'Age, height, weight, gender, step history, distance, calories and goals stay on this device. Turning sharing off removes your shared step count from every group.',
+                  'Your Settings name is shown to private-group members. Age, height, weight, gender, step history, distance, calories and goals stay on this device. Turning sharing off removes your shared step count from every group.',
                 ),
               ),
             ],

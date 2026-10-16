@@ -238,6 +238,28 @@ class GroupService {
     return GroupSummary(id: groupId, name: groupName, joinedAt: DateTime.now());
   }
 
+  /// Updates only this user's display name in their existing group rosters.
+  Future<void> updateMemberDisplayName({
+    required String uid,
+    required String displayName,
+  }) async {
+    final memberships = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('groups')
+        .get();
+    final groups = memberships.docs;
+    for (var start = 0; start < groups.length; start += 450) {
+      final batch = _firestore.batch();
+      for (final group in groups.skip(start).take(450)) {
+        batch.update(_member(group.id, uid), {
+          'displayName': _safeDisplayName(displayName),
+        });
+      }
+      await batch.commit();
+    }
+  }
+
   Future<bool> sharingEnabled(String uid) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('$_sharingPreferencePrefix$uid') ?? false;

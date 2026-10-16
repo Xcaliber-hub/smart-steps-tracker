@@ -323,7 +323,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Your name personalizes greetings. Other details are optional '
+            'Your name personalizes greetings and is used as your display name '
+            'if you create or join a private group. Other details are optional '
             'and used only for calorie and distance estimates, stored on-device.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -335,6 +336,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             controller: _nameController,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
+            maxLength: 40,
             autofillHints: const [AutofillHints.name],
             decoration: const InputDecoration(
               labelText: 'Your name',

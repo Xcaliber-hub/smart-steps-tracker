@@ -31,6 +31,37 @@ class SettingsScreen extends ConsumerWidget {
     HapticFeedback.mediumImpact();
   }
 
+  Future<void> _saveName(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfile profile,
+    String name,
+  ) async {
+    await ref
+        .read(profileProvider.notifier)
+        .update(profile.copyWith(name: name));
+    HapticFeedback.mediumImpact();
+    try {
+      final user = await ref.read(authStateProvider.future);
+      if (user == null) return;
+      await ref.read(authServiceProvider).updateDisplayName(name);
+      await ref.read(groupServiceProvider).updateMemberDisplayName(
+            uid: user.uid,
+            displayName: name,
+          );
+      if (context.mounted) {
+        _snack(context, 'Your group display name was updated.');
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _snack(
+          context,
+          'Name saved in Settings, but the group display name could not be synced. Check your connection and save again.',
+        );
+      }
+    }
+  }
+
   /// Generic number-editing dialog. Returns the entered value, or null.
   Future<double?> _numberDialog(
     BuildContext context, {
@@ -97,6 +128,7 @@ class SettingsScreen extends ConsumerWidget {
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
+          maxLength: 40,
           autofillHints: const [AutofillHints.name],
           decoration: const InputDecoration(labelText: 'Name'),
         ),
@@ -115,11 +147,8 @@ class SettingsScreen extends ConsumerWidget {
     controller.dispose();
     if (value == null || !context.mounted) return;
     if (value.toLowerCase() == 'aditya') {
-      await ref
-          .read(profileProvider.notifier)
-          .update(profile.copyWith(name: value));
+      await _saveName(context, ref, profile, value);
       if (!context.mounted) return;
-      HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -130,7 +159,7 @@ class SettingsScreen extends ConsumerWidget {
         );
       return;
     }
-    await _saveProfile(context, ref, profile.copyWith(name: value));
+    await _saveName(context, ref, profile, value);
   }
 
   Future<void> _editHeight(BuildContext context, WidgetRef ref) async {
@@ -426,7 +455,9 @@ class SettingsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.person_outline),
                   title: const Text('Name'),
                   subtitle: Text(
-                    profile.name.isEmpty ? 'Not set' : profile.name,
+                    profile.name.isEmpty
+                        ? 'Not set · used in private groups'
+                        : '${profile.name} · used in private groups',
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _editName(context, ref),
