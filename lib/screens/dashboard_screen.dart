@@ -10,6 +10,7 @@ import '../models/day_record.dart';
 import '../utils/formatters.dart';
 import '../utils/stats_calculator.dart';
 import '../viewmodels/providers.dart';
+import '../widgets/glow_card.dart';
 import '../widgets/goal_progress_ring.dart';
 import '../widgets/history_section.dart';
 import '../widgets/section_header.dart';
@@ -145,7 +146,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Card(
+                  GlowCard(
+                    intensity: progress >= 1.0 ? 1.0 : 0.85,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
@@ -168,7 +170,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   if (sensor.valueOrNull == false)
                     Card(
                       color: colorScheme.errorContainer,

@@ -8,6 +8,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../models/day_record.dart';
 import '../utils/formatters.dart';
 import '../viewmodels/providers.dart';
+import 'metal_card.dart';
 import 'section_header.dart';
 import 'stat_card.dart';
 
@@ -52,7 +53,7 @@ class _HistorySectionState extends ConsumerState<HistorySection> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SectionHeader(title: 'History'),
-            Card(
+            MetalCard(
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Semantics(
@@ -122,7 +123,7 @@ class _HistorySectionState extends ConsumerState<HistorySection> {
               title: Formatters.date(_selected),
             ),
             if (selectedRecord == null)
-              Card(
+              MetalCard(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
